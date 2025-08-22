@@ -1,0 +1,2 @@
+# Plataforma-de-Participa-o-Cidad-Digital
+Sistema digital de participação cidadã que permite aos moradores propor, votar e acompanhar projetos públicos, fortalecendo a democracia direta e promovendo maior transparência na gestão comunitária.
