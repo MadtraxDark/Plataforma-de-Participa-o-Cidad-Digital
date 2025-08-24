@@ -15,7 +15,7 @@
   <div class="login-left">
     <div class="hero-content">
       <div class="hero-image">
-        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/399f7c5a-9d66-4b3a-b011-115858a2da7a.png" alt="Montanhas de Teresópolis - Participação cidadã" />
+        <img src="{{ url_for('static', filename='img/tere.png') }}"  alt="Montanhas de Teresópolis - Participação cidadã" />
       </div>
       <h2 class="hero-title">Seja bem-vindo</h2>
       <p class="hero-subtitle">Acesse para participar das decisões da cidade.</p>
@@ -32,7 +32,7 @@
   <div class="login-right">
     <div class="login-header">
       <h1>Entrar</h1>
-      <p>Use seu e-mail <b>ou</b> CPF</p>
+      <p>Use seu e-mail ou CPF</p>
     </div>
 
     <form class="login-form" id="loginForm" novalidate method="post" action="/login">
