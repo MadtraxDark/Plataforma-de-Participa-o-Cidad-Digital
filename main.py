@@ -8,6 +8,7 @@ import os
 import re
 import pathlib
 import psycopg
+from datetime import date
 from psycopg.rows import dict_row
 from psycopg.errors import UniqueViolation
 
@@ -129,14 +130,55 @@ def send_reset_email(to_email: str, token: str):
         raise RuntimeError("MAIL_USER/MAIL_PASS não configurados no .env")
 
     reset_url = url_for("reset_password", token=token, _external=True)
-    body = (
-        "Olá!\n\n"
-        "Recebemos um pedido para redefinir sua senha no Participa Terê.\n"
-        f"Acesse o link abaixo (válido por 1 hora):\n{reset_url}\n\n"
-        "Se você não solicitou, ignore este e-mail."
-    )
+    body = f"""
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8">
+    <title>Redefinição de senha - Participa Tere</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f5f6f7;font-family:'Segoe UI',Tahoma,Verdana,sans-serif;">
+    <table align="center" width="100%" cellspacing="0" cellpadding="0" 
+           style="max-width:600px;margin:auto;background:white;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.08)">
+      <tr>
+        <td style="background:linear-gradient(135deg,#0e4d2c,#2e8b57);padding:20px;text-align:center;color:white;">
+          <h1 style="margin:0;font-size:22px;">Participa Terê</h1>
+          <p style="margin:4px 0 0;font-size:14px;opacity:.9">Democracia direta em Teresópolis</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:30px;">
+          <h2 style="color:#2c3e50;font-size:20px;margin-top:0;">Redefinição de senha</h2>
+          <p style="font-size:15px;color:#34495e;line-height:1.5;">
+            Olá,<br><br>
+            Recebemos um pedido para redefinir a sua senha no <strong>Participa Terê</strong>.
+          </p>
+          <p style="font-size:15px;color:#34495e;line-height:1.5;">
+            Para criar uma nova senha, clique no botão abaixo. O link é válido por <strong>1 hora</strong>.
+          </p>
+          <p style="text-align:center;margin:30px 0;">
+            <a href="{reset_url}" style="background:#3498db;color:white;text-decoration:none;font-weight:600;
+              padding:14px 28px;border-radius:8px;display:inline-block;">
+              Redefinir minha senha
+            </a>
+          </p>
+          <p style="font-size:13px;color:#7f8c8d;line-height:1.4;">
+            Se você não solicitou esta alteração, ignore este e-mail. Sua senha continuará a mesma.
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style="background:#ecf0f1;padding:15px;text-align:center;font-size:12px;color:#7f8c8d;">
+          © {date.today().year} Participa Terê — Teresópolis, RJ<br>
+          Segurança e transparência na participação cidadã
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
 
-    msg = MIMEText(body, _charset="utf-8")
+    msg = MIMEText(body, "html", _charset="utf-8")
     msg["Subject"] = "Recuperação de senha - Participa Terê"
     msg["From"] = mail_user
     msg["To"] = to_email
