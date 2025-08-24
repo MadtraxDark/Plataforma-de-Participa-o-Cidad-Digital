@@ -11,6 +11,10 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg.errors import UniqueViolation
 
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+import smtplib
+from email.mime.text import MIMEText
+
 # ========= Config básica =========
 load_dotenv()
 
@@ -101,6 +105,47 @@ def login_required(view):
         return view(*args, **kwargs)
     return wrapped
 
+# ========= Recuperação de senha (tokens + e-mail) =========
+serializer = URLSafeTimedSerializer(app.secret_key)
+
+def generate_reset_token(email: str) -> str:
+    return serializer.dumps(email, salt="reset-salt")
+
+def verify_reset_token(token: str, max_age: int = 3600):
+    try:
+        return serializer.loads(token, salt="reset-salt", max_age=max_age)
+    except (BadSignature, SignatureExpired):
+        return None
+
+def send_reset_email(to_email: str, token: str):
+    """
+    Envia e-mail usando Gmail (SSL 465).
+    Requer MAIL_USER e MAIL_PASS (senha de app) no .env.
+    """
+    mail_user = os.getenv("MAIL_USER")
+    mail_pass = os.getenv("MAIL_PASS")
+
+    if not mail_user or not mail_pass:
+        raise RuntimeError("MAIL_USER/MAIL_PASS não configurados no .env")
+
+    reset_url = url_for("reset_password", token=token, _external=True)
+    body = (
+        "Olá!\n\n"
+        "Recebemos um pedido para redefinir sua senha no Participa Terê.\n"
+        f"Acesse o link abaixo (válido por 1 hora):\n{reset_url}\n\n"
+        "Se você não solicitou, ignore este e-mail."
+    )
+
+    msg = MIMEText(body, _charset="utf-8")
+    msg["Subject"] = "Recuperação de senha - Participa Terê"
+    msg["From"] = mail_user
+    msg["To"] = to_email
+
+    # Envio
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(mail_user, mail_pass)
+        server.send_message(msg)
+
 # ========= Rotas =========
 @app.route("/")
 def root():
@@ -118,7 +163,6 @@ def home():
     try:
         return render_template("home.html", user=user, title="Início")
     except TemplateNotFound:
-        # fallback caso você ainda não tenha criado templates/home.html
         return f"Bem-vindo, {user['name']}! (Crie templates/home.html para uma página completa)"
 
 @app.route("/login", methods=["GET", "POST"])
@@ -179,7 +223,7 @@ def register():
                     VALUES (%s, %s, %s, %s)
                 """, (name, email, cpf, pw_hash))
                 conn.commit()
-            flash("Conta criada! Faça login.", "success")
+            flash("Conta criada com sucesso!", "success")
             return redirect(url_for("login"))
         except UniqueViolation as e:
             msg = "E-mail ou CPF já cadastrado."
@@ -193,6 +237,67 @@ def register():
             flash(f"Erro ao criar conta: {e}", "danger")
 
     return render_template("cadastro.html", title="Cadastro")
+
+# ====== NOVO: solicitar reset ======
+@app.route("/forgot", methods=["GET", "POST"])
+def forgot():
+    if request.method == "POST":
+        identifier = (request.form.get("identifier") or "").strip()
+
+        if not identifier:
+            flash("Informe seu e-mail ou CPF.", "warning")
+            return render_template("forgot.html", title="Esqueci minha senha", identifier=identifier)
+
+        # busca por email ou cpf
+        with get_conn() as conn, conn.cursor() as cur:
+            if is_email(identifier):
+                cur.execute("SELECT email FROM public.users WHERE LOWER(email)=LOWER(%s)", (identifier,))
+            else:
+                cpf = clean_cpf(identifier)
+                cur.execute("SELECT email FROM public.users WHERE cpf=%s", (cpf,))
+            user = cur.fetchone()
+
+        if not user:
+            flash("Usuário não encontrado para o e-mail/CPF informado.", "danger")
+            return render_template("forgot.html", title="Esqueci minha senha", identifier=identifier)
+
+        try:
+            token = generate_reset_token(user["email"])
+            send_reset_email(user["email"], token)
+            # sucesso!
+            flash("Enviamos um link de recuperação para o seu e-mail.", "success")
+            return redirect(url_for("login"))
+        except Exception as e:
+            flash(f"Falha ao enviar e-mail: {e}", "danger")
+            return render_template("forgot.html", title="Esqueci minha senha", identifier=identifier)
+
+    return render_template("forgot.html", title="Esqueci minha senha")
+
+# ====== NOVO: redefinir com token ======
+@app.route("/reset/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    email = verify_reset_token(token)
+    if not email:
+        flash("Token inválido ou expirado.", "danger")
+        return redirect(url_for("forgot"))
+
+    if request.method == "POST":
+        password = request.form.get("password", "").strip()
+        if not password:
+            flash("Informe a nova senha.", "warning")
+            return render_template("reset.html", title="Redefinir senha", token=token)
+
+        pw_hash = generate_password_hash(password)
+        with get_conn() as conn, conn.cursor() as cur:
+            cur.execute(
+                "UPDATE public.users SET password_hash=%s WHERE LOWER(email)=LOWER(%s)",
+                (pw_hash, email),
+            )
+            conn.commit()
+        flash("Senha redefinida! Agora você pode entrar.", "success")
+        return redirect(url_for("login"))
+
+    return render_template("reset.html", title="Redefinir senha", token=token)
 
 @app.route("/logout", methods=["POST"])
 @login_required

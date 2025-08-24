@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Participa Tere - Cadastro</title>
+  <title>Participa Terê - Cadastro</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="../static/style.css">
 </head>
 <body>
+{% include "partials/flash_messages.html" %}
 <div class="background-pattern"></div>
 
 <div class="login-container">
@@ -15,9 +16,9 @@
   <div class="login-left">
     <div class="hero-content">
       <div class="hero-image">
-        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/399f7c5a-9d66-4b3a-b011-115858a2da7a.png" alt="Montanhas de Teresópolis - Participação cidadã" />
+        <img src="{{ url_for('static', filename='img/tere.png') }}" alt="Montanhas de Teresópolis - Participação cidadã" />
       </div>
-      <h2 class="hero-title">Junte-se ao Participa Tere</h2>
+      <h2 class="hero-title">Junte-se ao Participa Terê</h2>
       <p class="hero-subtitle">Crie sua conta para propor ideias, votar e acompanhar ações da cidade.</p>
       <ul class="features-list">
         <li><i class="fas fa-lightbulb"></i> Publique propostas</li>

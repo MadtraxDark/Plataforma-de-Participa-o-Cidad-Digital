@@ -417,3 +417,63 @@ body {
   content: "✔";
   color: #2ecc71;
 }
+
+/* ==== Flash messages ==== */
+.flash-container{
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 3000;
+}
+
+.alert{
+  min-width: 320px;
+  max-width: 420px;
+  padding: 12px 40px 12px 14px;
+  border-radius: 10px;
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(0,0,0,.15);
+  position: relative;
+  font-weight: 600;
+  animation: slideIn .25s ease-out;
+}
+
+.alert .alert-close{
+  position: absolute;
+  right: 8px;
+  top: 6px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+  opacity: .9;
+}
+
+.alert-success { background: #2ecc71; }
+.alert-info    { background: #3498db; }
+.alert-warning { background: #f39c12; }
+.alert-danger  { background: #e74c3c; }
+
+@keyframes slideIn{
+  from{ transform: translateY(-10px); opacity: 0; }
+  to  { transform: translateY(0);    opacity: 1; }
+}
+
+/* Aviso inline de confirmação de senha */
+.field-error {
+  color: #e74c3c;
+  font-size: 12px;
+  margin-top: 6px;
+  display: none;
+}
+.field-error.show { display: block; }
+
+.form-input.invalid {
+  border-color: #e74c3c !important;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.10);
+}

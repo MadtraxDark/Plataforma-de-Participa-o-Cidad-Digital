@@ -82,22 +82,87 @@ function setValidity(el, ok, msg=''){ if(!el) return; el.setCustomValidity(ok?''
   });
 })();
 
-// ============ CADASTRO ============
-(function initCadastro(){
-  const form = document.getElementById('cadastroForm');
-  if (!form) return; // não está na página de cadastro
+// ============ CADASTRO + RESET DE SENHA ============
+(function initCadastroOuReset(){
+  const cadastroForm = document.getElementById('cadastroForm');
+  const resetForm    = document.getElementById('resetForm');
+  const form = cadastroForm || resetForm;
+  if (!form) return; // não está em nenhuma dessas páginas
 
-  const nome       = form.querySelector('#nome');
-  const email      = form.querySelector('#email');
-  const cpf        = form.querySelector('#cpf');
-  const telefone   = form.querySelector('#telefone');
-  const senha      = form.querySelector('#senhaCadastro');     // <- IDs do HTML final
+  const isReset = form.id === 'resetForm';
+
+  // Campos que existem nos dois
+  const senha      = form.querySelector('#senhaCadastro');
   const confirmar  = form.querySelector('#confirmarSenha');
-  const termos     = form.querySelector('#termos');
-  const btn        = form.querySelector('#btnCadastrar');
   const eyeSenha   = form.querySelector('#toggleSenhaCadastro');
   const eyeConf    = form.querySelector('#toggleConfirmarSenha');
+  const btn        = form.querySelector('#btnCadastrar'); // mesmo id nas duas telas
   const pwReqs     = form.querySelector('#pwReqs');
+
+  // nó de erro inline para "confirmar senha"
+function getOrMakeErrorNode(input){
+  if (!input) return null;
+  let help = input.closest('.form-group')?.querySelector('.field-error');
+  if (!help){
+    help = document.createElement('small');
+    help.className = 'field-help field-error';
+    help.setAttribute('aria-live','polite');
+    input.closest('.form-group')?.appendChild(help);
+  }
+  return help;
+}
+const confirmarHelp = getOrMakeErrorNode(confirmar);
+
+function setConfirmMismatch(on){
+  if (!confirmar) return;
+  if (on){
+    setValidity(confirmar, false, 'As senhas não coincidem.');
+    confirmar.setAttribute('aria-invalid','true');
+    confirmar.classList.add('invalid');
+    if (confirmarHelp) { confirmarHelp.textContent = 'As senhas não coincidem.'; confirmarHelp.classList.add('show'); }
+  } else {
+    setValidity(confirmar, true, '');
+    confirmar.removeAttribute('aria-invalid');
+    confirmar.classList.remove('invalid');
+    if (confirmarHelp) { confirmarHelp.textContent = ''; confirmarHelp.classList.remove('show'); }
+  }
+}
+
+// requisitos + confirmação em tempo real
+senha?.addEventListener('input', () => {
+  const c = updatePwChecklist(senha.value);
+  const allOk = c.len && c.lower && c.upper && c.digit;
+  const mismatch = !!(confirmar?.value) && confirmar.value !== senha.value;
+  setConfirmMismatch(mismatch);
+  btn?.toggleAttribute('disabled', !allOk || mismatch);
+});
+
+confirmar?.addEventListener('input', () => {
+  const mismatch = !!(senha?.value) && confirmar.value !== (senha?.value || '');
+  setConfirmMismatch(mismatch);
+  const c = updatePwChecklist(senha?.value || '');
+  const allOk = c.len && c.lower && c.upper && c.digit;
+  btn?.toggleAttribute('disabled', !allOk || mismatch);
+});
+
+// na saída do campo, mostra balão nativo também (opcional)
+confirmar?.addEventListener('blur', () => {
+  if (confirmar.value && senha?.value && confirmar.value !== senha.value){
+    confirmar.reportValidity();
+  }
+});
+
+  // Campos que só existem no cadastro (faça lookup seguro)
+  const nome     = form.querySelector('#nome');
+  const email    = form.querySelector('#email');
+  const cpf      = form.querySelector('#cpf');
+  const telefone = form.querySelector('#telefone');
+  const termos   = form.querySelector('#termos');
+
+  // --- helpers já existentes no seu arquivo ---
+  // onlyDigits, maskCPF, maskPhone, validateCPF, setValidity...
+
+  // Mapeamento visual dos requisitos de senha
   const reqMap = pwReqs ? {
     len:   pwReqs.querySelector('[data-check="len"]'),
     lower: pwReqs.querySelector('[data-check="lower"]'),
@@ -107,65 +172,111 @@ function setValidity(el, ok, msg=''){ if(!el) return; el.setCustomValidity(ok?''
 
   function updatePwChecklist(v){
     if (!reqMap) return {len:true,lower:true,upper:true,digit:true};
-    const checks = { len: v.length>=8, lower:/[a-z]/.test(v), upper:/[A-Z]/.test(v), digit:/\d/.test(v) };
-    Object.entries(checks).forEach(([k,ok]) => reqMap[k]?.classList.toggle('ok', ok));
+    const checks = {
+      len:   v.length >= 8,
+      lower: /[a-z]/.test(v),
+      upper: /[A-Z]/.test(v),
+      digit: /\d/.test(v)
+    };
+    Object.entries(checks).forEach(([k, ok]) => reqMap[k]?.classList.toggle('ok', ok));
     return checks;
   }
 
-  // máscaras
+  // Máscaras (só se os campos existirem)
   cpf?.addEventListener('input', () => {
     const d = onlyDigits(cpf.value);
     cpf.value = maskCPF(d);
-    if (d && d.length!==11) setValidity(cpf,false,'CPF deve conter 11 dígitos.'); else setValidity(cpf,true);
+    if (d && d.length !== 11) setValidity(cpf, false, 'CPF deve conter 11 dígitos.');
+    else setValidity(cpf, true);
   });
   telefone?.addEventListener('input', () => { telefone.value = maskPhone(onlyDigits(telefone.value)); });
 
-  // toggles senha
+  // Mostrar/ocultar senha
   const toggleVis = (input, icon) => { if(!(input&&icon)) return; input.type = input.type==='password'?'text':'password'; icon.classList.toggle('fa-eye-slash'); };
   eyeSenha?.addEventListener('click', ()=>toggleVis(senha,eyeSenha));
   eyeConf ?.addEventListener('click', ()=>toggleVis(confirmar,eyeConf));
   eyeSenha?.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggleVis(senha,eyeSenha);} });
   eyeConf ?.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggleVis(confirmar,eyeConf);} });
 
-  // requisitos em tempo real
+  // Requisitos em tempo real + confirmação
   senha?.addEventListener('input', () => {
     const c = updatePwChecklist(senha.value);
     const allOk = c.len && c.lower && c.upper && c.digit;
-    btn?.toggleAttribute('disabled', !allOk);
-    if (confirmar.value && confirmar.value !== senha.value){
+    btn?.toggleAttribute('disabled', !allOk || (confirmar && confirmar.value !== senha.value));
+    if (confirmar?.value && confirmar.value !== senha.value){
       setValidity(confirmar,false,'As senhas não coincidem.');
     } else {
       setValidity(confirmar,true);
     }
   });
   confirmar?.addEventListener('input', () => {
-    if (confirmar.value && confirmar.value !== senha.value){
+    if (confirmar.value && senha && confirmar.value !== senha.value){
       setValidity(confirmar,false,'As senhas não coincidem.');
     } else {
       setValidity(confirmar,true);
     }
+    // reavalia botão
+    const c = updatePwChecklist(senha?.value || '');
+    const allOk = c.len && c.lower && c.upper && c.digit;
+    btn?.toggleAttribute('disabled', !allOk || (confirmar && confirmar.value !== (senha?.value||'')));
   });
   updatePwChecklist(senha?.value || '');
 
-  // submit: valida e deixa enviar pro Flask
+  // Submit: validação específica por tela
   form.addEventListener('submit', (e) => {
-    if (!nome.value.trim()){ nome.reportValidity(); e.preventDefault(); return; }
-    if (!isEmail(email.value.trim())){ setValidity(email,false,'Informe um e-mail válido.'); email.reportValidity(); e.preventDefault(); return; }
+    // spinner visual
+    btn?.classList.add('loading');
+
+    if (isReset){
+      // Somente senha/confirmar
+      const c = updatePwChecklist(senha?.value || '');
+      if (!(c.len && c.lower && c.upper && c.digit)){ senha?.reportValidity(); e.preventDefault(); btn?.classList.remove('loading'); return; }
+      if (senha?.value !== confirmar?.value){ setValidity(confirmar,false,'As senhas não coincidem.'); confirmar?.reportValidity(); e.preventDefault(); btn?.classList.remove('loading'); return; }
+      setValidity(confirmar,true);
+      return; // deixa enviar
+    }
+
+    // Cadastro completo
+    if (!nome?.value.trim()){ nome?.reportValidity(); e.preventDefault(); btn?.classList.remove('loading'); return; }
+    // e-mail
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(email.value.trim())){
+      setValidity(email,false,'Informe um e-mail válido.');
+      email.reportValidity(); e.preventDefault(); btn?.classList.remove('loading'); return;
+    }
     setValidity(email,true);
-
-    const d = onlyDigits(cpf.value);
-    if (d.length!==11){ setValidity(cpf,false,'CPF deve conter 11 dígitos.'); cpf.reportValidity(); e.preventDefault(); return; }
-    if (!validateCPF(d)){ setValidity(cpf,false,'CPF inválido. Verifique os dígitos.'); cpf.reportValidity(); e.preventDefault(); return; }
+    // CPF
+    const d = onlyDigits(cpf?.value || '');
+    if (d.length !== 11){ setValidity(cpf,false,'CPF deve conter 11 dígitos.'); cpf?.reportValidity(); e.preventDefault(); btn?.classList.remove('loading'); return; }
+    if (!validateCPF(d)){ setValidity(cpf,false,'CPF inválido. Verifique os dígitos.'); cpf?.reportValidity(); e.preventDefault(); btn?.classList.remove('loading'); return; }
     setValidity(cpf,true);
-
-    const c = updatePwChecklist(senha.value);
-    if (!(c.len && c.lower && c.upper && c.digit)){ senha.reportValidity(); e.preventDefault(); return; }
-    if (senha.value !== confirmar.value){ setValidity(confirmar,false,'As senhas não coincidem.'); confirmar.reportValidity(); e.preventDefault(); return; }
+    // senha
+    const c = updatePwChecklist(senha?.value || '');
+    if (!(c.len && c.lower && c.upper && c.digit)){ senha?.reportValidity(); e.preventDefault(); btn?.classList.remove('loading'); return; }
+    if (senha?.value !== confirmar?.value){ setValidity(confirmar,false,'As senhas não coincidem.'); confirmar?.reportValidity(); e.preventDefault(); btn?.classList.remove('loading'); return; }
     setValidity(confirmar,true);
-
-    if (!termos.checked){ termos.setCustomValidity('Você precisa aceitar os termos.'); termos.reportValidity(); e.preventDefault(); return; }
-    termos.setCustomValidity('');
-
-    btn?.classList.add('loading'); // spinner visual; o form segue
+    // termos (se existir)
+    if (termos && !termos.checked){ termos.setCustomValidity('Você precisa aceitar os termos.'); termos.reportValidity(); e.preventDefault(); btn?.classList.remove('loading'); return; }
+    termos?.setCustomValidity('');
   });
+})();
+
+// ==== Flash: auto-close e clique para fechar ====
+(function initFlashes(){
+  const container = document.querySelector('.flash-container');
+  if (!container) return;
+  container.querySelectorAll('.alert').forEach(alert => {
+    // fechar ao clicar no X
+    alert.querySelector('.alert-close')?.addEventListener('click', ()=> alert.remove());
+    // auto fechar em 5s
+    setTimeout(()=> alert.remove(), 5000);
+  });
+})();
+
+// ==== Botão loading no forgot ====
+(function initForgot(){
+  const form = document.querySelector('form[action="/forgot"], form#forgotForm') || 
+               (document.querySelector('h1')?.textContent?.includes('Recuperar') ? document.querySelector('form') : null);
+  if (!form) return;
+  const btn = form.querySelector('button[type="submit"]');
+  form.addEventListener('submit', ()=> btn?.classList.add('loading'));
 })();
