@@ -15,7 +15,7 @@ services:
       - key: PGUSER
         value: neondb_owner
       - key: PGPASSWORD
-        sync: 
+        sync: npg_ZrakAdBH90tu
       - key: PGSSLMODE
         value: require
       - key: PGCHANNELBINDING
