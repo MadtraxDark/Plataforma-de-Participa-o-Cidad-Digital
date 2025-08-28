@@ -20,3 +20,8 @@ services:
         value: require
       - key: PGCHANNELBINDING
         value: prefer
+ # --- E-mail (reset de senha) ---
+      - key: MAIL_USER
+        sync: false
+      - key: MAIL_PASS
+        sync: false
