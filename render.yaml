@@ -1,1 +1,22 @@
-
+services:
+  - type: web
+    name: participa-tere
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn main:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PGHOST
+        value: ep-dark-hat-acr51biu-pooler.sa-east-1.aws.neon.tech
+      - key: PGDATABASE
+        value: neondb
+      - key: PGUSER
+        value: neondb_owner
+      - key: PGPASSWORD
+        sync: 
+      - key: PGSSLMODE
+        value: require
+      - key: PGCHANNELBINDING
+        value: prefer
