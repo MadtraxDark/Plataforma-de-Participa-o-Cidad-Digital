@@ -202,10 +202,19 @@ def home():
             (session["user_id"],),
         )
         user = cur.fetchone()
-    try:
-        return render_template("home.html", user=user, title="Início")
-    except TemplateNotFound:
-        return f"Bem-vindo, {user['name']}! (Crie templates/home.html para uma página completa)"
+
+        # KPIs (preencha os outros quando tiver tabelas)
+        cur.execute("SELECT COUNT(*) AS total FROM public.users")
+        total_users = (cur.fetchone() or {}).get("total", 0)
+        total_proposals = 0
+        total_votes = 0
+
+    return render_template(
+        "dashboard.html",
+        user=user,
+        title="Início",
+        kpis={"users": total_users, "proposals": total_proposals, "votes": total_votes},
+    )
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -346,7 +355,7 @@ def reset_password(token):
 
     return render_template("reset.html", title="Redefinir senha", token=token)
 
-@app.route("/logout", methods=["POST"])
+@app.route("/logout", methods=["GET", "POST"])
 @login_required
 def logout():
     session.clear()

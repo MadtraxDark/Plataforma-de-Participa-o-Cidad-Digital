@@ -280,3 +280,30 @@ confirmar?.addEventListener('blur', () => {
   const btn = form.querySelector('button[type="submit"]');
   form.addEventListener('submit', ()=> btn?.classList.add('loading'));
 })();
+
+// ==== Dashboard JS ====
+
+// Saudações dinâmicas conforme a hora do dia
+document.addEventListener("DOMContentLoaded", () => {
+  const saudacao = document.getElementById("saudacao");
+  if (saudacao) {
+    const hora = new Date().getHours();
+    let msg = "Olá";
+    if (hora < 12) msg = "Bom dia";
+    else if (hora < 18) msg = "Boa tarde";
+    else msg = "Boa noite";
+
+    saudacao.innerHTML = `${msg}, ${saudacao.textContent.replace("Olá, ", "")}`;
+  }
+
+  // Botões de ação -> redirecionar para rotas
+  const btnNova = document.getElementById("go-nova-proposta");
+  const btnVotacoes = document.getElementById("go-votacoes");
+  const btnConsultas = document.getElementById("go-consultas");
+  const btnPerfil = document.getElementById("go-perfil");
+
+  if (btnNova) btnNova.addEventListener("click", () => window.location.href = "/propostas/nova");
+  if (btnVotacoes) btnVotacoes.addEventListener("click", () => window.location.href = "/votacoes");
+  if (btnConsultas) btnConsultas.addEventListener("click", () => window.location.href = "/consultas");
+  if (btnPerfil) btnPerfil.addEventListener("click", () => window.location.href = "/perfil");
+});
