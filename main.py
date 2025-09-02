@@ -248,6 +248,10 @@ def register():
         password = request.form.get("password", "")
         cpf = clean_cpf(cpf_in)
 
+        birthdate = request.form.get("birthdate") or None
+        raw_phone = request.form.get("phone") or ""
+        phone = re.sub(r"\D", "", raw_phone) or None
+
         if not name or not email or not cpf or not password:
             flash("Preencha todos os campos.", "warning")
             return render_template("cadastro.html", title="Cadastro")
@@ -261,9 +265,10 @@ def register():
         try:
             with get_conn() as conn, conn.cursor() as cur:
                 cur.execute("""
-                    INSERT INTO public.users (name, email, cpf, password_hash)
-                    VALUES (%s, %s, %s, %s)
-                """, (name, email, cpf, pw_hash))
+                    INSERT INTO public.users
+                      (name, email, cpf, password_hash, birthdate, phone)
+                    VALUES (%s,   %s,    %s,   %s,            %s,        %s)
+                """, (name, email, cpf, pw_hash, birthdate, phone))
                 conn.commit()
             flash("Conta criada com sucesso!", "success")
             return redirect(url_for("login"))
