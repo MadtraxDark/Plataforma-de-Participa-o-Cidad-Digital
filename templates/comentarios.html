@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Comentários — Participa Terê</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style2.css') }}">
+</head>
+<body>
+<header>
+  <div class="container nav">
+    <div class="brand"><div class="logo"><i class="fa-solid fa-seedling"></i></div><span>Participa Terê</span></div>
+    <div class="spacer"></div>
+    <a class="btn" href="{{ url_for('home') }}"><i class="fa-solid fa-house"></i> Início</a>
+  </div>
+</header>
+
+<main class="container">
+  <section class="hero">
+    <h1 class="hero-title">Comentários</h1>
+    <p class="hero-subtitle">Últimos comentários publicados.</p>
+  </section>
+
+  <section class="grid">
+    {% for c in items %}
+      <article class="card">
+        <p class="hero-subtitle"><strong>{{ c.user_name }}</strong> em <em>{{ c.proposal_title }}</em> — {{ c.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+        <p>{{ c.content }}</p>
+      </article>
+    {% else %}
+      <div class="card">Nenhum comentário ainda.</div>
+    {% endfor %}
+  </section>
+</main>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

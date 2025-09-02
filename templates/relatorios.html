@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Relatórios — Participa Terê</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style2.css') }}">
+</head>
+<body>
+<header>
+  <div class="container nav">
+    <div class="brand"><div class="logo"><i class="fa-solid fa-seedling"></i></div><span>Participa Terê</span></div>
+    <div class="spacer"></div>
+    <a class="btn" href="{{ url_for('home') }}"><i class="fa-solid fa-house"></i> Início</a>
+  </div>
+</header>
+
+<main class="container grid">
+  <section class="hero" style="grid-column:1/-1">
+    <h1 class="hero-title">Relatórios de Engajamento</h1>
+    <p class="hero-subtitle">Participação agregada por bairro e tema.</p>
+  </section>
+
+  <div class="card">
+    <h3 class="section-title">Propostas por Bairro</h3>
+    <table class="table">
+      <thead><tr><th>Bairro</th><th>Total</th></tr></thead>
+      <tbody>
+        {% for r in por_bairro %}
+          <tr><td>{{ r.neighborhood or '—' }}</td><td>{{ r.total }}</td></tr>
+        {% else %}
+          <tr><td colspan="2">Sem dados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3 class="section-title">Propostas por Tema</h3>
+    <table class="table">
+      <thead><tr><th>Tema</th><th>Total</th></tr></thead>
+      <tbody>
+        {% for r in por_tema %}
+          <tr><td>{{ r.theme or '—' }}</td><td>{{ r.total }}</td></tr>
+        {% else %}
+          <tr><td colspan="2">Sem dados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</main>
+</body>
+</html>

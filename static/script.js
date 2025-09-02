@@ -281,29 +281,133 @@ confirmar?.addEventListener('blur', () => {
   form.addEventListener('submit', ()=> btn?.classList.add('loading'));
 })();
 
-// ==== Dashboard JS ====
+/* =========================================================
+   DASHBOARD (JS GLOBAL)
+   Arquivo completo para a tela principal
+   ========================================================= */
 
-// Saudações dinâmicas conforme a hora do dia
-document.addEventListener("DOMContentLoaded", () => {
-  const saudacao = document.getElementById("saudacao");
-  if (saudacao) {
-    const hora = new Date().getHours();
-    let msg = "Olá";
-    if (hora < 12) msg = "Bom dia";
-    else if (hora < 18) msg = "Boa tarde";
-    else msg = "Boa noite";
+// Redirecionar
+const go = (p) => {
+  window.location.href = p;
+};
 
-    saudacao.innerHTML = `${msg}, ${saudacao.textContent.replace("Olá, ", "")}`;
+// Buscar JSON com tratamento de erro
+async function getJSON(url) {
+  try {
+    const r = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    return await r.json();
+  } catch (e) {
+    console.warn("Falha ao buscar", url, e);
+    return null;
   }
+}
 
-  // Botões de ação -> redirecionar para rotas
-  const btnNova = document.getElementById("go-nova-proposta");
-  const btnVotacoes = document.getElementById("go-votacoes");
-  const btnConsultas = document.getElementById("go-consultas");
-  const btnPerfil = document.getElementById("go-perfil");
+// Saudação dinâmica
+function atualizarSaudacao() {
+  const el = document.getElementById("saudacao");
+  if (!el) return;
+  const h = new Date().getHours();
+  const prefix = h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
+  const nome = el.textContent.replace(/^Olá,\s*/i, "").trim();
+  el.innerHTML = `${prefix}, ${nome}`;
+}
 
-  if (btnNova) btnNova.addEventListener("click", () => window.location.href = "/propostas/nova");
-  if (btnVotacoes) btnVotacoes.addEventListener("click", () => window.location.href = "/votacoes");
-  if (btnConsultas) btnConsultas.addEventListener("click", () => window.location.href = "/consultas");
-  if (btnPerfil) btnPerfil.addEventListener("click", () => window.location.href = "/perfil");
+// Navegação pelos módulos
+function configurarNavegacao() {
+  const links = [
+    ["go-propostas", "/propostas"],
+    ["go-votacoes", "/votacoes"],
+    ["go-comentarios", "/comentarios"],
+    ["go-identidade", "/identidade"],
+    ["go-painel", "/painel"],
+    ["go-historico", "/historico"],
+    ["go-notificacoes", "/notificacoes"],
+    ["go-notificacoes-2", "/notificacoes"],
+    ["go-relatorios", "/relatorios"],
+    ["go-integracoes", "/integracoes"],
+  ];
+  links.forEach(([id, path]) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", () => go(path));
+  });
+}
+
+// Carregar andamento dos projetos
+async function carregarAndamento() {
+  const tbody = document.querySelector("#tbl-andamento tbody");
+  if (!tbody) return;
+  const data = await getJSON("/api/painel/resumo");
+  tbody.innerHTML = "";
+  (data?.items || []).forEach((item) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${item.titulo}</td>
+      <td>${item.status}</td>
+      <td>${item.suporte}%</td>
+      <td>${item.atualizado_em}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Carregar filtros do histórico
+async function carregarFiltrosHistorico() {
+  const selB = document.getElementById("f-bairro");
+  const selT = document.getElementById("f-tema");
+  if (!selB || !selT) return;
+  const bairros = await getJSON("/api/historico/bairros");
+  const temas = await getJSON("/api/historico/temas");
+  (bairros?.items || []).forEach((b) =>
+    selB.insertAdjacentHTML("beforeend", `<option>${b}</option>`)
+  );
+  (temas?.items || []).forEach((t) =>
+    selT.insertAdjacentHTML("beforeend", `<option>${t}</option>`)
+  );
+}
+
+// Carregar histórico
+async function carregarHistorico() {
+  const tbody = document.querySelector("#tbl-historico tbody");
+  if (!tbody) return;
+  const bairro = document.getElementById("f-bairro")?.value || "";
+  const tema = document.getElementById("f-tema")?.value || "";
+  const qs = new URLSearchParams({ bairro, tema });
+  const data = await getJSON(`/api/historico?${qs.toString()}`);
+  tbody.innerHTML = "";
+  (data?.items || []).forEach((x) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${x.titulo}</td>
+      <td>${x.bairro}</td>
+      <td>${x.tema}</td>
+      <td>${x.resultado}</td>
+      <td>${x.data}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Carregar notificações
+async function carregarNotificacoes() {
+  const ul = document.getElementById("lista-notificacoes");
+  if (!ul) return;
+  const data = await getJSON("/api/notificacoes");
+  ul.innerHTML = "";
+  (data?.items || []).forEach((n) => {
+    const li = document.createElement("li");
+    li.textContent = `${n.hora} — ${n.msg}`;
+    ul.appendChild(li);
+  });
+}
+
+// Inicialização
+document.addEventListener("DOMContentLoaded", () => {
+  atualizarSaudacao();
+  configurarNavegacao();
+  carregarAndamento();
+  carregarFiltrosHistorico().then(carregarHistorico);
+  const btn = document.getElementById("btn-filtrar");
+  if (btn) btn.addEventListener("click", carregarHistorico);
+  carregarNotificacoes();
 });

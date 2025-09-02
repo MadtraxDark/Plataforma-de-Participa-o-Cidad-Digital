@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, url_for, session, flash, render_template
+from flask import Flask, request, redirect, url_for, session, flash, render_template, jsonify, Blueprint
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from dotenv import load_dotenv
@@ -60,9 +60,10 @@ def validate_cpf(cpf: str) -> bool:
     if dv2 == 10: dv2 = 0
     return cpf[-2:] == f"{dv1}{dv2}"
 
-# ========= DB: tabela e índices =========
+# ========= DB: esquema e índices =========
 def init_db():
     with get_conn() as conn, conn.cursor() as cur:
+        # USERS
         cur.execute("""
             CREATE TABLE IF NOT EXISTS public.users (
                 id BIGSERIAL PRIMARY KEY,
@@ -70,28 +71,94 @@ def init_db():
                 email         TEXT        NOT NULL,
                 cpf           TEXT        NOT NULL,
                 password_hash TEXT        NOT NULL,
-                created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+                created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+                birthdate     DATE NULL,
+                phone         TEXT NULL,
+                gender        TEXT NULL,
+                age_group     TEXT NULL,
+                schooling     TEXT NULL,
+                neighborhood  TEXT NULL
             );
         """)
-        cur.execute("""
-            CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique_ci
-            ON public.users (LOWER(email));
-        """)
-        cur.execute("""
-            CREATE UNIQUE INDEX IF NOT EXISTS users_cpf_unique
-            ON public.users (cpf);
-        """)
+        cur.execute("""CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique_ci ON public.users (LOWER(email));""")
+        cur.execute("""CREATE UNIQUE INDEX IF NOT EXISTS users_cpf_unique      ON public.users (cpf);""")
         cur.execute("""
             DO $$
             BEGIN
-              IF NOT EXISTS (
-                SELECT 1 FROM pg_constraint WHERE conname = 'users_cpf_format_chk'
-              ) THEN
+              IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_cpf_format_chk') THEN
                 ALTER TABLE public.users
                 ADD CONSTRAINT users_cpf_format_chk CHECK (cpf ~ '^[0-9]{11}$');
               END IF;
             END$$;
         """)
+
+        # PROPOSALS
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS public.proposals (
+              id BIGSERIAL PRIMARY KEY,
+              title        TEXT NOT NULL,
+              description  TEXT NOT NULL,
+              author_id    BIGINT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+              neighborhood TEXT,
+              theme        TEXT,
+              status       TEXT NOT NULL DEFAULT 'em_analise', -- em_analise | em_votacao | aprovada | rejeitada
+              created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+              updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+            );
+        """)
+        cur.execute("""CREATE INDEX IF NOT EXISTS proposals_status_idx ON public.proposals (status);""")
+        cur.execute("""CREATE INDEX IF NOT EXISTS proposals_theme_idx  ON public.proposals (theme);""")
+        cur.execute("""CREATE INDEX IF NOT EXISTS proposals_neigh_idx  ON public.proposals (neighborhood);""")
+
+        # VOTES
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS public.votes (
+              user_id     BIGINT NOT NULL REFERENCES public.users(id)      ON DELETE CASCADE,
+              proposal_id BIGINT NOT NULL REFERENCES public.proposals(id)  ON DELETE CASCADE,
+              choice      BOOLEAN NOT NULL, -- TRUE = SIM, FALSE = NÃO
+              created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+              PRIMARY KEY (user_id, proposal_id)
+            );
+        """)
+
+        # COMMENTS
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS public.comments (
+              id BIGSERIAL PRIMARY KEY,
+              proposal_id BIGINT NOT NULL REFERENCES public.proposals(id) ON DELETE CASCADE,
+              user_id     BIGINT NOT NULL REFERENCES public.users(id)     ON DELETE CASCADE,
+              content     TEXT NOT NULL,
+              created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+              moderated   BOOLEAN NOT NULL DEFAULT FALSE
+            );
+        """)
+
+        # NOTIFICATIONS
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS public.notifications (
+              id BIGSERIAL PRIMARY KEY,
+              user_id    BIGINT REFERENCES public.users(id) ON DELETE CASCADE,
+              message    TEXT NOT NULL,
+              created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+              read_at    TIMESTAMPTZ
+            );
+        """)
+
+        # trigger para updated_at em proposals
+        cur.execute("""
+        CREATE OR REPLACE FUNCTION set_updated_at() RETURNS TRIGGER AS $$
+        BEGIN NEW.updated_at = now(); RETURN NEW; END; $$ LANGUAGE plpgsql;
+        """)
+        cur.execute("""
+        DO $$ BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='trg_proposals_updated_at') THEN
+            CREATE TRIGGER trg_proposals_updated_at
+            BEFORE UPDATE ON public.proposals
+            FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+          END IF;
+        END$$;
+        """)
+
         conn.commit()
 
 init_db()
@@ -106,6 +173,9 @@ def login_required(view):
         return view(*args, **kwargs)
     return wrapped
 
+def current_user_id():
+    return session.get("user_id")
+
 # ========= Recuperação de senha (tokens + e-mail) =========
 serializer = URLSafeTimedSerializer(app.secret_key)
 
@@ -119,13 +189,8 @@ def verify_reset_token(token: str, max_age: int = 3600):
         return None
 
 def send_reset_email(to_email: str, token: str):
-    """
-    Envia e-mail usando Gmail (SSL 465).
-    Requer MAIL_USER e MAIL_PASS (senha de app) no .env.
-    """
     mail_user = os.getenv("MAIL_USER")
     mail_pass = os.getenv("MAIL_PASS")
-
     if not mail_user or not mail_pass:
         raise RuntimeError("MAIL_USER/MAIL_PASS não configurados no .env")
 
@@ -133,57 +198,34 @@ def send_reset_email(to_email: str, token: str):
     body = f"""
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8">
-    <title>Redefinição de senha - Participa Tere</title>
-  </head>
+  <head><meta charset="UTF-8"><title>Redefinição de senha - Participa Tere</title></head>
   <body style="margin:0;padding:0;background:#f5f6f7;font-family:'Segoe UI',Tahoma,Verdana,sans-serif;">
     <table align="center" width="100%" cellspacing="0" cellpadding="0" 
            style="max-width:600px;margin:auto;background:white;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.08)">
-      <tr>
-        <td style="background:linear-gradient(135deg,#0e4d2c,#2e8b57);padding:20px;text-align:center;color:white;">
-          <h1 style="margin:0;font-size:22px;">Participa Terê</h1>
-          <p style="margin:4px 0 0;font-size:14px;opacity:.9">Democracia direta em Teresópolis</p>
-        </td>
-      </tr>
-      <tr>
-        <td style="padding:30px;">
-          <h2 style="color:#2c3e50;font-size:20px;margin-top:0;">Redefinição de senha</h2>
-          <p style="font-size:15px;color:#34495e;line-height:1.5;">
-            Olá,<br><br>
-            Recebemos um pedido para redefinir a sua senha no <strong>Participa Terê</strong>.
-          </p>
-          <p style="font-size:15px;color:#34495e;line-height:1.5;">
-            Para criar uma nova senha, clique no botão abaixo. O link é válido por <strong>1 hora</strong>.
-          </p>
-          <p style="text-align:center;margin:30px 0;">
-            <a href="{reset_url}" style="background:#3498db;color:white;text-decoration:none;font-weight:600;
-              padding:14px 28px;border-radius:8px;display:inline-block;">
-              Redefinir minha senha
-            </a>
-          </p>
-          <p style="font-size:13px;color:#7f8c8d;line-height:1.4;">
-            Se você não solicitou esta alteração, ignore este e-mail. Sua senha continuará a mesma.
-          </p>
-        </td>
-      </tr>
-      <tr>
-        <td style="background:#ecf0f1;padding:15px;text-align:center;font-size:12px;color:#7f8c8d;">
-          © {date.today().year} Participa Terê — Teresópolis, RJ<br>
-          Segurança e transparência na participação cidadã
-        </td>
-      </tr>
+      <tr><td style="background:linear-gradient(135deg,#0e4d2c,#2e8b57);padding:20px;text-align:center;color:white;">
+        <h1 style="margin:0;font-size:22px;">Participa Terê</h1>
+        <p style="margin:4px 0 0;font-size:14px;opacity:.9">Democracia direta em Teresópolis</p>
+      </td></tr>
+      <tr><td style="padding:30px;">
+        <h2 style="color:#2c3e50;font-size:20px;margin-top:0;">Redefinição de senha</h2>
+        <p style="font-size:15px;color:#34495e;line-height:1.5;">Olá,<br><br>Recebemos um pedido para redefinir a sua senha no <strong>Participa Terê</strong>.</p>
+        <p style="font-size:15px;color:#34495e;line-height:1.5;">Para criar uma nova senha, clique no botão abaixo. O link é válido por <strong>1 hora</strong>.</p>
+        <p style="text-align:center;margin:30px 0;">
+          <a href="{reset_url}" style="background:#3498db;color:white;text-decoration:none;font-weight:600;padding:14px 28px;border-radius:8px;display:inline-block;">Redefinir minha senha</a>
+        </p>
+        <p style="font-size:13px;color:#7f8c8d;line-height:1.4;">Se você não solicitou esta alteração, ignore este e-mail. Sua senha continuará a mesma.</p>
+      </td></tr>
+      <tr><td style="background:#ecf0f1;padding:15px;text-align:center;font-size:12px;color:#7f8c8d;">
+        © {date.today().year} Participa Terê — Teresópolis, RJ<br>Segurança e transparência na participação cidadã
+      </td></tr>
     </table>
   </body>
 </html>
 """
-
     msg = MIMEText(body, "html", _charset="utf-8")
     msg["Subject"] = "Recuperação de senha - Participa Terê"
     msg["From"] = mail_user
     msg["To"] = to_email
-
-    # Envio
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
         server.login(mail_user, mail_pass)
         server.send_message(msg)
@@ -197,17 +239,17 @@ def root():
 @login_required
 def home():
     with get_conn() as conn, conn.cursor() as cur:
-        cur.execute(
-            "SELECT id, name, email, cpf FROM public.users WHERE id = %s",
-            (session["user_id"],),
-        )
+        cur.execute("SELECT id, name, email, cpf FROM public.users WHERE id = %s", (session["user_id"],))
         user = cur.fetchone()
 
-        # KPIs (preencha os outros quando tiver tabelas)
         cur.execute("SELECT COUNT(*) AS total FROM public.users")
         total_users = (cur.fetchone() or {}).get("total", 0)
-        total_proposals = 0
-        total_votes = 0
+
+        cur.execute("SELECT COUNT(*) AS total FROM public.proposals")
+        total_proposals = (cur.fetchone() or {}).get("total", 0)
+
+        cur.execute("SELECT COUNT(*) AS total FROM public.votes")
+        total_votes = (cur.fetchone() or {}).get("total", 0)
 
     return render_template(
         "dashboard.html",
@@ -274,9 +316,8 @@ def register():
         try:
             with get_conn() as conn, conn.cursor() as cur:
                 cur.execute("""
-                    INSERT INTO public.users
-                      (name, email, cpf, password_hash, birthdate, phone)
-                    VALUES (%s,   %s,    %s,   %s,            %s,        %s)
+                    INSERT INTO public.users (name, email, cpf, password_hash, birthdate, phone)
+                    VALUES (%s,%s,%s,%s,%s,%s)
                 """, (name, email, cpf, pw_hash, birthdate, phone))
                 conn.commit()
             flash("Conta criada com sucesso!", "success")
@@ -294,17 +335,15 @@ def register():
 
     return render_template("cadastro.html", title="Cadastro")
 
-# ====== NOVO: solicitar reset ======
+# ====== Esqueci/reset de senha ======
 @app.route("/forgot", methods=["GET", "POST"])
 def forgot():
     if request.method == "POST":
         identifier = (request.form.get("identifier") or "").strip()
-
         if not identifier:
             flash("Informe seu e-mail ou CPF.", "warning")
             return render_template("forgot.html", title="Esqueci minha senha", identifier=identifier)
 
-        # busca por email ou cpf
         with get_conn() as conn, conn.cursor() as cur:
             if is_email(identifier):
                 cur.execute("SELECT email FROM public.users WHERE LOWER(email)=LOWER(%s)", (identifier,))
@@ -320,7 +359,6 @@ def forgot():
         try:
             token = generate_reset_token(user["email"])
             send_reset_email(user["email"], token)
-            # sucesso!
             flash("Enviamos um link de recuperação para o seu e-mail.", "success")
             return redirect(url_for("login"))
         except Exception as e:
@@ -329,7 +367,6 @@ def forgot():
 
     return render_template("forgot.html", title="Esqueci minha senha")
 
-# ====== NOVO: redefinir com token ======
 @app.route("/reset/<token>", methods=["GET", "POST"])
 def reset_password(token):
     email = verify_reset_token(token)
@@ -345,10 +382,7 @@ def reset_password(token):
 
         pw_hash = generate_password_hash(password)
         with get_conn() as conn, conn.cursor() as cur:
-            cur.execute(
-                "UPDATE public.users SET password_hash=%s WHERE LOWER(email)=LOWER(%s)",
-                (pw_hash, email),
-            )
+            cur.execute("UPDATE public.users SET password_hash=%s WHERE LOWER(email)=LOWER(%s)", (pw_hash, email))
             conn.commit()
         flash("Senha redefinida! Agora você pode entrar.", "success")
         return redirect(url_for("login"))
@@ -358,9 +392,308 @@ def reset_password(token):
 @app.route("/logout", methods=["GET", "POST"])
 @login_required
 def logout():
-    session.clear()
+    session.clear
     flash("Você saiu da sua conta.", "info")
     return redirect(url_for("login"))
+
+# ========= Módulos — páginas =========
+@app.route("/propostas")
+@login_required
+def propostas():
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("""
+            SELECT p.id, p.title, p.status,
+                   COALESCE(p.neighborhood,'') AS neighborhood,
+                   COALESCE(p.theme,'') AS theme,
+                   u.name AS author_name,
+                   COALESCE(SUM(CASE WHEN v.choice THEN 1 ELSE 0 END),0) AS yes,
+                   COALESCE(SUM(CASE WHEN NOT v.choice THEN 1 ELSE 0 END),0) AS no
+            FROM public.proposals p
+            JOIN public.users u ON u.id = p.author_id
+            LEFT JOIN public.votes v ON v.proposal_id = p.id
+            GROUP BY p.id, u.name
+            ORDER BY p.created_at DESC;
+        """)
+        items = cur.fetchall()
+    return render_template("propostas.html", title="Propostas", items=items)
+
+@app.route("/propostas/nova", methods=["GET","POST"])
+@login_required
+def propostas_nova():
+    if request.method == "POST":
+        title = (request.form.get("title") or "").strip()
+        description = (request.form.get("description") or "").strip()
+        neighborhood = (request.form.get("neighborhood") or "").strip()
+        theme = (request.form.get("theme") or "").strip()
+        status = request.form.get("status") or "em_analise"
+        if not title or not description:
+            flash("Título e descrição são obrigatórios.", "warning")
+            return render_template("propostas_nova.html", title="Nova Proposta", form=request.form)
+        with get_conn() as conn, conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO public.proposals (title, description, author_id, neighborhood, theme, status)
+                VALUES (%s,%s,%s,%s,%s,%s)
+                RETURNING id;
+            """, (title, description, current_user_id(), neighborhood, theme, status))
+            pid = cur.fetchone()["id"]
+            conn.commit()
+        flash("Proposta criada!", "success")
+        return redirect(url_for("proposta_detalhe", pid=pid))
+    return render_template("propostas_nova.html", title="Nova Proposta")
+
+@app.route("/propostas/<int:pid>")
+@login_required
+def proposta_detalhe(pid):
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("""
+            SELECT p.*, u.name AS author_name,
+                   COALESCE(SUM(CASE WHEN v.choice THEN 1 ELSE 0 END),0) AS yes,
+                   COALESCE(SUM(CASE WHEN NOT v.choice THEN 1 ELSE 0 END),0) AS no
+            FROM public.proposals p
+            JOIN public.users u ON u.id = p.author_id
+            LEFT JOIN public.votes v ON v.proposal_id = p.id
+            WHERE p.id=%s
+            GROUP BY p.id, u.name;
+        """, (pid,))
+        prop = cur.fetchone()
+        if not prop:
+            flash("Proposta não encontrada.", "danger")
+            return redirect(url_for("propostas"))
+
+        cur.execute("""
+            SELECT c.*, u.name AS user_name
+            FROM public.comments c
+            JOIN public.users u ON u.id = c.user_id
+            WHERE c.proposal_id=%s
+            ORDER BY c.created_at DESC;
+        """, (pid,))
+        comments = cur.fetchall()
+
+    return render_template("propostas_detalhe.html", title=prop["title"], prop=prop, comments=comments)
+
+@app.post("/propostas/<int:pid>/votar")
+@login_required
+def votar(pid):
+    choice = (request.form.get("choice") or "").lower()
+    if choice not in ("sim","nao"):
+        flash("Escolha inválida.", "warning")
+        return redirect(url_for("proposta_detalhe", pid=pid))
+    yes = (choice == "sim")
+    try:
+        with get_conn() as conn, conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO public.votes (user_id, proposal_id, choice)
+                VALUES (%s,%s,%s)
+                ON CONFLICT (user_id, proposal_id)
+                DO UPDATE SET choice=EXCLUDED.choice, created_at=now();
+            """, (current_user_id(), pid, yes))
+            conn.commit()
+        flash("Voto registrado!", "success")
+    except Exception as e:
+        flash(f"Erro ao votar: {e}", "danger")
+    return redirect(url_for("proposta_detalhe", pid=pid))
+
+@app.post("/propostas/<int:pid>/comentar")
+@login_required
+def comentar(pid):
+    content = (request.form.get("content") or "").strip()
+    if not content:
+        flash("Comentário vazio.", "warning")
+        return redirect(url_for("proposta_detalhe", pid=pid))
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("""
+            INSERT INTO public.comments (proposal_id, user_id, content)
+            VALUES (%s,%s,%s);
+        """, (pid, current_user_id(), content))
+        conn.commit()
+    flash("Comentário publicado!", "success")
+    return redirect(url_for("proposta_detalhe", pid=pid))
+
+@app.route("/votacoes")
+@login_required
+def votacoes():
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("""
+            SELECT p.id, p.title, p.neighborhood, p.theme,
+                   COALESCE(SUM(CASE WHEN v.choice THEN 1 ELSE 0 END),0) AS yes,
+                   COALESCE(SUM(CASE WHEN NOT v.choice THEN 1 ELSE 0 END),0) AS no
+            FROM public.proposals p
+            LEFT JOIN public.votes v ON v.proposal_id = p.id
+            WHERE p.status='em_votacao'
+            GROUP BY p.id
+            ORDER BY p.updated_at DESC;
+        """)
+        items = cur.fetchall()
+    return render_template("votacoes.html", title="Votações Abertas", items=items)
+
+@app.route("/comentarios")
+@login_required
+def comentarios():
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("""
+            SELECT c.id, c.content, c.created_at, p.title AS proposal_title, u.name AS user_name
+            FROM public.comments c
+            JOIN public.proposals p ON p.id=c.proposal_id
+            JOIN public.users u ON u.id=c.user_id
+            ORDER BY c.created_at DESC
+            LIMIT 50;
+        """)
+        items = cur.fetchall()
+    return render_template("comentarios.html", title="Comentários", items=items)
+
+@app.route("/identidade")
+@login_required
+def identidade():
+    return render_template("identidade.html", title="Validação de Identidade")
+
+@app.route("/painel")
+@login_required
+def painel():
+    return redirect(url_for("home"))
+
+@app.route("/historico")
+@login_required
+def historico_page():
+    return render_template("historico.html", title="Histórico por Bairro/Tema")
+
+@app.route("/notificacoes")
+@login_required
+def notificacoes_page():
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("""
+            SELECT id, message, created_at, read_at
+            FROM public.notifications
+            WHERE user_id=%s
+            ORDER BY created_at DESC;
+        """, (current_user_id(),))
+        items = cur.fetchall()
+    return render_template("notificacoes.html", title="Notificações", items=items)
+
+@app.route("/relatorios")
+@login_required
+def relatorios():
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("""SELECT neighborhood, COUNT(*) AS total FROM public.proposals GROUP BY neighborhood ORDER BY total DESC;""")
+        por_bairro = cur.fetchall()
+        cur.execute("""SELECT theme, COUNT(*) AS total FROM public.proposals GROUP BY theme ORDER BY total DESC;""")
+        por_tema = cur.fetchall()
+    return render_template("relatorios.html", title="Relatórios de Engajamento", por_bairro=por_bairro, por_tema=por_tema)
+
+@app.route("/integracoes")
+@login_required
+def integracoes():
+    return render_template("integracoes.html", title="Integrações Públicas")
+
+# ========= APIs usadas pelo dashboard =========
+api_bp = Blueprint("api", __name__, url_prefix="/api")
+
+@api_bp.route("/painel/resumo")
+@login_required
+def api_painel_resumo():
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("""
+            WITH tot AS (
+              SELECT p.id,
+                     COALESCE(SUM(CASE WHEN v.choice THEN 1 ELSE 0 END),0) AS yes,
+                     COALESCE(SUM(CASE WHEN NOT v.choice THEN 1 ELSE 0 END),0) AS no
+              FROM public.proposals p
+              LEFT JOIN public.votes v ON v.proposal_id=p.id
+              GROUP BY p.id
+            )
+            SELECT p.title,
+                   CASE p.status
+                      WHEN 'em_analise' THEN 'Em análise'
+                      WHEN 'em_votacao' THEN 'Em votação'
+                      WHEN 'aprovada' THEN 'Aprovada'
+                      WHEN 'rejeitada' THEN 'Rejeitada'
+                      ELSE p.status
+                   END AS status,
+                   CASE WHEN (t.yes+t.no)=0 THEN 0 ELSE ROUND(100.0*t.yes/(t.yes+t.no)) END::INT AS suporte,
+                   to_char(p.updated_at, 'YYYY-MM-DD') AS atualizado_em
+            FROM public.proposals p
+            LEFT JOIN tot t ON t.id=p.id
+            ORDER BY p.updated_at DESC
+            LIMIT 5;
+        """)
+        items = cur.fetchall()
+    return jsonify(items=items)
+
+@api_bp.route("/historico")
+@login_required
+def api_historico():
+    bairro = request.args.get("bairro") or ""
+    tema   = request.args.get("tema") or ""
+    params = []
+    where = []
+    if bairro:
+        where.append("p.neighborhood = %s")
+        params.append(bairro)
+    if tema:
+        where.append("p.theme = %s")
+        params.append(tema)
+    where_sql = "WHERE " + " AND ".join(where) if where else ""
+
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute(f"""
+            SELECT p.title AS titulo,
+                   COALESCE(p.neighborhood,'') AS bairro,
+                   COALESCE(p.theme,'') AS tema,
+                   CASE p.status
+                     WHEN 'aprovada' THEN 'Aprovada'
+                     WHEN 'rejeitada' THEN 'Rejeitada'
+                     WHEN 'em_votacao' THEN 'Em votação'
+                     ELSE 'Em análise'
+                   END AS resultado,
+                   to_char(p.updated_at,'YYYY-MM-DD') AS data
+            FROM public.proposals p
+            {where_sql}
+            ORDER BY p.updated_at DESC
+            LIMIT 100;
+        """, params)
+        items = cur.fetchall()
+    return jsonify(items=items)
+
+@api_bp.route("/historico/bairros")
+@login_required
+def api_hist_bairros():
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("""
+            SELECT DISTINCT neighborhood AS b
+            FROM public.proposals
+            WHERE neighborhood IS NOT NULL AND neighborhood <> ''
+            ORDER BY b;
+        """)
+        items = [r["b"] for r in cur.fetchall()]
+    return jsonify(items=items)
+
+@api_bp.route("/historico/temas")
+@login_required
+def api_hist_temas():
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("""
+            SELECT DISTINCT theme AS t
+            FROM public.proposals
+            WHERE theme IS NOT NULL AND theme <> ''
+            ORDER BY t;
+        """)
+        items = [r["t"] for r in cur.fetchall()]
+    return jsonify(items=items)
+
+@api_bp.route("/notificacoes")
+@login_required
+def api_notificacoes():
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("""
+            SELECT to_char(created_at,'HH24:MI') AS hora, message AS msg
+            FROM public.notifications
+            WHERE user_id=%s
+            ORDER BY created_at DESC
+            LIMIT 20;
+        """, (current_user_id(),))
+        items = cur.fetchall()
+    return jsonify(items=items)
+
+app.register_blueprint(api_bp)
 
 if __name__ == "__main__":
     app.run(debug=True)

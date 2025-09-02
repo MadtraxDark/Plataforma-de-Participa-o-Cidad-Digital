@@ -1,179 +1,149 @@
-/* ==== Dashboard ==== */
+/* =========================================================
+   PARTICIPA TERÊ — DASHBOARD
+   ========================================================= */
 :root {
-  --bg1: #0f1224;
-  --bg2: #171b36;
-  --ac1: #6b8bff;
-  --ac2: #8a63ff;
-  --ok: #1cc88a;
-  --warn: #f6c23e;
-  --err: #e74a3b;
-  --text: #e9ecff;
-  --muted: #b9c0e7;
-  --card: #1a1f3f;
-  --card2: #202651;
-  --border: rgba(255, 255, 255, .08);
+  --bg1: #f0fdf4;         
+  --bg2: #dcfce7;
+  --text: #1f2937;        
+  --muted: #6b7280;       
+  --accent: #22c55e;      
+  --accent-dark: #16a34a; 
+  --card: #ffffff;       
+  --border: #e5e7eb;      
+  --shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  --radius: 15px;
 }
 
+/* ===== Layout base ===== */
 body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
   background: linear-gradient(135deg, var(--bg1), var(--bg2));
   color: var(--text);
-}
-
-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,0));
-  backdrop-filter: saturate(1.2) blur(8px);
 }
 
 .container {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 16px;
+  padding: 20px;
 }
 
-.nav {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+/* ===== Header ===== */
+header {
+  background: #ffffffcc;
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 600;
-  letter-spacing: .3px;
-}
-
+.nav { display: flex; align-items: center; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--accent-dark); }
 .brand .logo {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 10px;
-  background: linear-gradient(135deg, var(--ac1), var(--ac2));
-  box-shadow: 0 6px 18px rgba(138, 99, 255, .3);
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25);
 }
+.spacer { flex: 1; }
 
-.spacer {
-  flex: 1;
-}
-
+/* ===== Botões ===== */
 .btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  background: linear-gradient(180deg, var(--card), var(--card2));
+  border-radius: 12px;
+  background: #fff;
+  color: var(--accent-dark);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   cursor: pointer;
+  transition: 0.2s;
   text-decoration: none;
-  color: var(--text);
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(0,0,0,.1); }
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  color: #fff;
+  border: none;
 }
 
-.btn:hover {
-  transform: translateY(-1px);
-  transition: .15s ease;
-  box-shadow: 0 8px 22px rgba(0,0,0,.18);
+/* ===== Hero ===== */
+.hero { text-align: center; margin: 40px 0; }
+.hero-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 15px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
-
-.hero {
-  padding: 26px 0 8px;
-}
-
-.hello {
-  font-size: 18px;
+.hero-subtitle {
+  font-size: 16px;
+  opacity: 0.9;
+  line-height: 1.6;
+  margin-bottom: 25px;
   color: var(--muted);
 }
 
-.title {
-  font-size: 26px;
-  font-weight: 600;
-  margin: 6px 0 2px;
-}
+/* ===== Cards ===== */
+.grid { display: grid; gap: 20px; }
+.grid.kpis { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 30px; }
+.grid.actions { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 
-.subtitle {
-  color: var(--muted);
-  font-size: 14px;
+.action {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
 }
-
-.grid {
-  display: grid;
-  gap: 16px;
-}
-
-.grid.kpis {
-  grid-template-columns: repeat(3, 1fr);
-  margin: 12px 0 6px;
+.action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 22px rgba(0,0,0,.1);
 }
 
 .card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
   border: 1px solid var(--border);
-  border-radius: 16px;
-  background: linear-gradient(180deg, var(--card), var(--card2));
-  padding: 16px;
+  box-shadow: var(--shadow);
+  transition: 0.2s;
+}
+.card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,.1); }
+
+/* ===== KPI Cards ===== */
+.kpi { display: flex; align-items: center; gap: 12px; }
+.kpi i { font-size: 22px; color: var(--accent); }
+.kpi .num { font-size: 22px; font-weight: 700; color: var(--accent-dark); }
+.kpi .lbl { font-size: 14px; color: var(--muted); }
+
+/* ===== Section Titles ===== */
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 30px 0 15px;
+  color: var(--accent-dark);
 }
 
-.kpi {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+/* ===== Tables ===== */
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  text-align: left;
 }
+.table th { color: #374151; }
 
-.kpi i {
-  font-size: 18px;
-  opacity: .9;
-}
-
-.kpi .num {
-  font-size: 24px;
-  font-weight: 700;
-}
-
-.kpi .lbl {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.grid.actions {
-  grid-template-columns: repeat(4, 1fr);
-}
-
-.action {
-  padding: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  cursor: pointer;
-  text-decoration: none;
+/* ===== Notificações ===== */
+#box-notificacoes ul { list-style: none; padding: 0; margin: 0; }
+#box-notificacoes li {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
   color: var(--text);
-}
-
-.action h4 {
-  margin: 0;
-  font-size: 15px;
-}
-
-.action p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.action:hover {
-  outline: 1px solid var(--border);
-  transform: translateY(-2px);
-  transition: .15s ease;
-}
-
-@media (max-width: 980px) {
-  .grid.kpis {
-    grid-template-columns: 1fr;
-  }
-  .grid.actions {
-    grid-template-columns: 1fr 1fr;
-  }
 }

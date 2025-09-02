@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{{ title or "Dashboard" }}</title>
 
-  <!-- Fonte + Ícones -->
+  <!-- fontes/ícones (mantém igual às outras telas) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
@@ -21,64 +21,86 @@
         <span>Participa Terê</span>
       </div>
       <div class="spacer"></div>
-      <a class="btn" href="#"><i class="fa-solid fa-bell"></i> Notificações</a>
+      <a class="btn" id="go-notificacoes"><i class="fa-solid fa-bell"></i> Notificações</a>
       <a class="btn" href="{{ url_for('logout') }}"><i class="fa-solid fa-right-from-bracket"></i> Sair</a>
     </div>
   </header>
 
   <main class="container">
+    <!-- Saudação -->
     <section class="hero">
-      <div class="hello" id="saudacao">
-        Olá, {{ user.name.split(' ')[0] if user and user.name else 'usuário' }} 👋
-      </div>
+      <div class="hello" id="saudacao">Olá, {{ user.name.split(' ')[0] if user and user.name else 'usuário' }} 👋</div>
       <div class="title">Bem-vindo(a) ao painel</div>
-      <div class="subtitle">Aqui você encontra atalhos rápidos e um resumo do sistema.</div>
+      <div class="subtitle">Atalhos e resumo do sistema.</div>
     </section>
 
-    <!-- KPIs -->
+    <!-- KPIs topo -->
     <section class="grid kpis">
       <div class="card kpi">
         <i class="fa-solid fa-users"></i>
         <div>
-          <div class="num">{{ kpis.users }}</div>
+          <div class="num">{{ kpis.users|default(0) }}</div>
           <div class="lbl">Usuários</div>
         </div>
       </div>
       <div class="card kpi">
         <i class="fa-solid fa-lightbulb"></i>
         <div>
-          <div class="num">{{ kpis.proposals }}</div>
+          <div class="num">{{ kpis.proposals|default(0) }}</div>
           <div class="lbl">Propostas</div>
         </div>
       </div>
       <div class="card kpi">
         <i class="fa-solid fa-vote-yea"></i>
         <div>
-          <div class="num">{{ kpis.votes }}</div>
+          <div class="num">{{ kpis.votes|default(0) }}</div>
           <div class="lbl">Votos</div>
         </div>
       </div>
     </section>
 
+    <!-- Módulos do escopo -->
+    <h3 class="section-title">Módulos principais</h3>
     <section class="grid actions">
-      <a class="card action" id="go-nova-proposta">
-        <h4><i class="fa-solid fa-plus"></i> Nova proposta</h4>
-        <p>Criar uma proposta para apreciação pública.</p>
+      <a class="card action" id="go-propostas">
+        <h4><i class="fa-solid fa-file-circle-plus"></i> Propostas (API + CRUD)</h4>
+        <p>Criar, listar e editar propostas; comentários e votação.</p>
       </a>
       <a class="card action" id="go-votacoes">
-        <h4><i class="fa-solid fa-check-double"></i> Votações</h4>
-        <p>Acompanhar e participar das votações ativas.</p>
+        <h4><i class="fa-solid fa-check-double"></i> Sistema de Votação</h4>
+        <p>Participar e acompanhar votações abertas.</p>
       </a>
-      <a class="card action" id="go-consultas">
-        <h4><i class="fa-solid fa-magnifying-glass-chart"></i> Consultas</h4>
-        <p>Buscar propostas, votos e usuários.</p>
+      <a class="card action" id="go-comentarios">
+        <h4><i class="fa-solid fa-comments"></i> Comentários</h4>
+        <p>Discussão, moderação e API de comentários.</p>
       </a>
-      <a class="card action" id="go-perfil">
-        <h4><i class="fa-solid fa-user"></i> Meu perfil</h4>
-        <p>Gerenciar suas informações pessoais.</p>
+      <a class="card action" id="go-identidade">
+        <h4><i class="fa-solid fa-id-card-clip"></i> Validação de Identidade</h4>
+        <p>Autenticação segura e verificação de identidade.</p>
+      </a>
+      <a class="card action" id="go-painel">
+        <h4><i class="fa-solid fa-chart-line"></i> Painel de Resultados</h4>
+        <p>Andamento dos projetos e métricas agregadas.</p>
+      </a>
+      <a class="card action" id="go-historico">
+        <h4><i class="fa-solid fa-clock-rotate-left"></i> Histórico por Bairro/Tema</h4>
+        <p>Votações e decisões filtradas.</p>
+      </a>
+      <a class="card action" id="go-notificacoes-2">
+        <h4><i class="fa-solid fa-bell"></i> Notificações</h4>
+        <p>Novas propostas e votações abertas.</p>
+      </a>
+      <a class="card action" id="go-relatorios">
+        <h4><i class="fa-solid fa-chart-pie"></i> Relatórios de Engajamento</h4>
+        <p>Participação por perfil demográfico.</p>
+      </a>
+      <a class="card action" id="go-integracoes">
+        <h4><i class="fa-solid fa-building-columns"></i> Integrações Públicas</h4>
+        <p>Conexão com órgãos públicos.</p>
       </a>
     </section>
   </main>
+
   <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

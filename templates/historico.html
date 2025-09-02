@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Histórico — Participa Terê</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style2.css') }}">
+</head>
+<body>
+<header>
+  <div class="container nav">
+    <div class="brand"><div class="logo"><i class="fa-solid fa-seedling"></i></div><span>Participa Terê</span></div>
+    <div class="spacer"></div>
+    <a class="btn" href="{{ url_for('home') }}"><i class="fa-solid fa-house"></i> Início</a>
+  </div>
+</header>
+
+<main class="container">
+  <section class="hero">
+    <h1 class="hero-title">Histórico por Bairro/Tema</h1>
+    <p class="hero-subtitle">Explore resultados anteriores por filtros.</p>
+  </section>
+
+  <section class="card">
+    <div class="filters">
+      <select id="f-bairro"><option value="">Todos os bairros</option></select>
+      <select id="f-tema"><option value="">Todos os temas</option></select>
+      <button class="btn" id="btn-filtrar"><i class="fa-solid fa-filter"></i> Filtrar</button>
+    </div>
+    <table class="table" id="tbl-historico">
+      <thead><tr><th>Proposta</th><th>Bairro</th><th>Tema</th><th>Resultado</th><th>Data</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</main>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
