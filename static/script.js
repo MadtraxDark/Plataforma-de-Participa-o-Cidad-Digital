@@ -281,10 +281,10 @@ confirmar?.addEventListener('blur', () => {
   form.addEventListener('submit', ()=> btn?.classList.add('loading'));
 })();
 
-/* =========================================================
-   DASHBOARD (JS GLOBAL)
+/* ================================================
+                DASHBOARD
    Arquivo completo para a tela principal
-   ========================================================= */
+   ================================================*/
 
 // Redirecionar
 const go = (p) => {
