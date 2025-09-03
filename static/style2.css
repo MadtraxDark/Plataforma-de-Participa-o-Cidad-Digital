@@ -147,3 +147,181 @@ header {
   font-size: 14px;
   color: var(--text);
 }
+
+.no-hover:hover { 
+  transform: none !important; 
+  box-shadow: 0 6px 16px rgba(0,0,0,.08) !important; 
+  cursor: default; 
+}
+
+/* ===== Form refinements apenas dentro do .form-panel ===== */
+.form-panel {
+  padding: 22px 24px;
+  border-radius: 16px;
+  box-shadow: 0 10px 22px rgba(0,0,0,.08);
+}
+
+.form-panel .field { 
+  display:flex; 
+  flex-direction:column; 
+  gap:8px; 
+  min-width: 0; 
+}
+.form-panel .field-inline{ align-items:flex-start; }
+
+.form-panel label{ font-weight:600; color:#0f172a; }
+.form-panel .opcional{ color:#6b7280; font-weight:500; }
+
+.form-panel .grid-2{ 
+  display:grid; 
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr); 
+  gap:16px; 
+}
+
+/* Inputs só dentro do .form-panel */
+.form-panel input[type="text"], 
+.form-panel textarea, 
+.form-panel select, 
+.form-panel input:not([type]) {
+  width: 100%;
+  max-width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+.form-panel input::placeholder, 
+.form-panel textarea::placeholder{ color:#9ca3af; }
+
+.form-panel input:focus, 
+.form-panel textarea:focus, 
+.form-panel select:focus {
+  outline: none;
+  border-color: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34,197,94,.18);
+  background: #fff;
+}
+
+/* Contador/ajuda */
+.form-panel .help{ color:#6b7280; font-size:.85rem; }
+.form-panel #desc-count{ align-self:flex-end; margin-top:-4px; }
+
+/* Status linha única no desktop */
+.form-panel .field-inline{ display:flex; gap:12px; align-items:center; }
+.form-panel .field-inline label{ margin-bottom:0; }
+
+/* Ações */
+.form-panel .actions{
+  display:flex; justify-content:flex-start; gap:12px; margin-top:4px;
+}
+
+/* Botão (escopo só aqui) */
+.form-panel .btn-primary:hover{ filter: brightness(1.03); }
+.form-panel .btn-primary:active{ transform: translateY(1px); }
+
+/* Responsivo */
+@media (max-width: 820px){
+  .form-panel .grid-2{ grid-template-columns: 1fr; }
+  .form-panel .field-inline{ flex-direction:column; align-items:flex-start; }
+}
+
+/* --- Anti-overflow e colunas seguras, apenas no form --- */
+.form-panel { 
+  overflow: hidden;                       /* nada vaza do card */
+}
+
+/* garante que tudo dentro do form use box-sizing correto */
+.form-panel, 
+.form-panel * { 
+  box-sizing: border-box;
+}
+
+/* grid base do form (se o seu .grid global for diferente) */
+.form-panel.grid {
+  display: grid;
+  gap: 16px;
+}
+
+/* cada field pode encolher sem estourar a coluna */
+.form-panel .field { 
+  min-width: 0;                           /* chave p/ não “entrar” na outra coluna */
+  display: flex; 
+  flex-direction: column; 
+  gap: 8px;
+}
+
+/* linha Bairro | Tema com colunas elásticas que não estouram */
+.form-panel .grid-2 {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  column-gap: 16px;
+  row-gap: 16px;
+}
+
+/* inputs/textarea/select não ultrapassam a coluna */
+.form-panel input[type="text"],
+.form-panel input:not([type]),
+.form-panel textarea,
+.form-panel select {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* textarea só cresce na vertical e mantém scroll interno */
+.form-panel textarea {
+  resize: vertical;
+  overflow: auto;
+  min-height: 132px;                      /* evita ficar pequeno demais */
+  line-height: 1.5;
+  word-break: break-word;                 /* evita palavras gigantes estourarem */
+}
+
+/* contador encostado sem quebrar layout */
+.form-panel #desc-count {
+  align-self: flex-end;
+  margin-top: -2px;
+  white-space: nowrap;
+}
+
+/* responsivo: uma coluna no mobile */
+@media (max-width: 820px){
+  .form-panel .grid-2 { grid-template-columns: 1fr; }
+}
+
+/* Estilo do asterisco de campo obrigatório */
+.form-panel .required {
+  color: #dc2626;       /* vermelho */
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: inherit;             /* usa a mesma cor do header */
+  text-decoration: none;      /* tira sublinhado */
+  cursor: pointer;
+}
+.brand:hover {
+  opacity: 0.9;
+}
+
+.hero .hello { 
+  font-weight: 700; 
+  color: var(--accent-dark);
+  font-size: 1.8rem;
+}
+.hero .hello .wave { margin-right: 6px; }
+.hero .hello strong {
+  background: linear-gradient(90deg, var(--accent), var(--accent-dark));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

@@ -12,7 +12,10 @@
 <body>
 <header>
   <div class="container nav">
-    <div class="brand"><div class="logo"><i class="fa-solid fa-seedling"></i></div><span>Participa Terê</span></div>
+    <a href="{{ url_for('home') }}" class="brand">
+      <div class="logo"><i class="fa-solid fa-seedling"></i></div>
+      <span>Participa Terê</span>
+    </a>
     <div class="spacer"></div>
     <a class="btn" href="{{ url_for('home') }}"><i class="fa-solid fa-house"></i> Início</a>
     <a class="btn btn-primary" href="{{ url_for('propostas_nova') }}"><i class="fa-solid fa-plus"></i> Nova proposta</a>

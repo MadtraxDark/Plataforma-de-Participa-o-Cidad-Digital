@@ -411,3 +411,26 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btn) btn.addEventListener("click", carregarHistorico);
   carregarNotificacoes();
 });
+
+// === Nova Proposta: contador de caracteres + auto-resize ===
+(function () {
+  const ta = document.getElementById('description');
+  const counter = document.getElementById('desc-count');
+  const LIM = 1000;
+
+  if (ta && counter) {
+    function update() {
+      // contador
+      const n = ta.value.length;
+      counter.textContent = `${n}/${LIM}`;
+      counter.style.color = n > LIM ? '#dc2626' : '#6b7280';
+
+      // auto-resize
+      ta.style.height = 'auto';
+      ta.style.height = ta.scrollHeight + 'px';
+    }
+
+    ta.addEventListener('input', update);
+    window.addEventListener('load', update);
+  }
+})();

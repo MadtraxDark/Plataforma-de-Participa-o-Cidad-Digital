@@ -29,10 +29,12 @@
   <main class="container">
     <!-- Saudação -->
     <section class="hero">
-      <div class="hello" id="saudacao">Olá, {{ user.name.split(' ')[0] if user and user.name else 'usuário' }} 👋</div>
-      <div class="title">Bem-vindo(a) ao painel</div>
-      <div class="subtitle">Atalhos e resumo do sistema.</div>
-    </section>
+  <div class="hello" id="saudacao">
+    <strong>{{ user.name.split(' ')[0] if user and user.name else 'usuário' }}</strong>
+  </div>
+  <div class="title">Seja bem-vindo ao Participa Terê</div>
+  <div class="subtitle">Aqui você acompanha e cria propostas para a cidade</div>
+</section>
 
     <!-- KPIs topo -->
     <section class="grid kpis">

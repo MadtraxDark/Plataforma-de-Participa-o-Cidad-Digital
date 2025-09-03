@@ -11,7 +11,10 @@
 <body>
 <header>
   <div class="container nav">
-    <div class="brand"><div class="logo"><i class="fa-solid fa-seedling"></i></div><span>Participa Terê</span></div>
+    <a href="{{ url_for('home') }}" class="brand">
+  <div class="logo"><i class="fa-solid fa-seedling"></i></div>
+  <span>Participa Terê</span>
+</a>
     <div class="spacer"></div>
     <a class="btn" href="{{ url_for('propostas') }}"><i class="fa-solid fa-arrow-left"></i> Voltar</a>
   </div>
@@ -23,28 +26,51 @@
     <p class="hero-subtitle">Preencha os campos para enviar sua proposta.</p>
   </section>
 
-  <form method="post" class="card grid" style="gap:12px">
-    <input name="title" placeholder="Título" value="{{ form.title if form else '' }}">
-    <textarea name="description" rows="5" placeholder="Descrição detalhada">{{ form.description if form else '' }}</textarea>
+  <form method="post" class="card grid no-hover form-panel" style="gap:16px">
+  <div class="field">
+    <label for="title">Título <span class="required">*</span></label>
+    <input id="title" name="title" required
+           placeholder="Ex.: Iluminação pública na Rua das Flores"
+           value="{{ form.title if form else '' }}">
+  </div>
 
-    <div class="grid" style="grid-template-columns:1fr 1fr">
-      <input name="neighborhood" placeholder="Bairro (opcional)" value="{{ form.neighborhood if form else '' }}">
-      <input name="theme" placeholder="Tema (opcional)" value="{{ form.theme if form else '' }}">
+  <div class="field">
+    <label for="description">Descrição detalhada <span class="required">*</span></label>
+    <textarea id="description" name="description" rows="5" required
+              placeholder="Explique o problema e a proposta de solução...">{{ form.description if form else '' }}</textarea>
+    <small class="help" id="desc-count">0/1000</small>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="field">
+      <label for="neighborhood">Bairro <span class="opcional">(opcional)</span></label>
+      <input id="neighborhood" name="neighborhood" placeholder="Ex.: Várzea"
+             value="{{ form.neighborhood if form else '' }}">
     </div>
 
-    <label class="hero-subtitle">Status
-      <select name="status">
-        <option value="em_analise">Em análise</option>
-        <option value="em_votacao">Em votação</option>
-        <option value="aprovada">Aprovada</option>
-        <option value="rejeitada">Rejeitada</option>
-      </select>
-    </label>
-
-    <div>
-      <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Criar</button>
+    <div class="field">
+      <label for="theme">Tema <span class="opcional">(opcional)</span></label>
+      <input id="theme" name="theme" placeholder="Ex.: Mobilidade, Segurança, Saúde..."
+             value="{{ form.theme if form else '' }}">
     </div>
-  </form>
+  </div>
+
+  <div class="field field-inline">
+    <label for="status">Status</label>
+    <select id="status" name="status">
+      <option value="em_analise"  {% if form and form.status=='em_analise' %}selected{% endif %}>Em análise</option>
+      <option value="em_votacao"  {% if form and form.status=='em_votacao' %}selected{% endif %}>Em votação</option>
+      <option value="aprovada"    {% if form and form.status=='aprovada' %}selected{% endif %}>Aprovada</option>
+      <option value="rejeitada"   {% if form and form.status=='rejeitada' %}selected{% endif %}>Rejeitada</option>
+    </select>
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="btn btn-primary">
+      <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Criar
+    </button>
+  </div>
+</form>
 </main>
 <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
