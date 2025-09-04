@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title or ('Editar: ' ~ p.title) }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style2.css') }}">
+</head>
+<body>
+<header>
+  <div class="container nav">
+    <a href="{{ url_for('home') }}" class="brand">
+      <div class="logo"><i class="fa-solid fa-seedling"></i></div>
+      <span>Participa Terê</span>
+    </a>
+    <div class="spacer"></div>
+    <a class="btn" href="{{ url_for('propostas') }}"><i class="fa-solid fa-list"></i> Todas</a>
+    <a class="btn" href="{{ url_for('home') }}"><i class="fa-solid fa-house"></i> Início</a>
+  </div>
+</header>
+
+<main class="container">
+  <section class="hero">
+    <h1 class="hero-title">Editar proposta</h1>
+    <p class="hero-subtitle">Você está editando: <strong>{{ p.title }}</strong></p>
+  </section>
+
+  <!-- Card do formulário com o seu visual -->
+  <form class="card form-panel grid no-hover" method="post" novalidate>
+    <!-- Título -->
+    <div class="field">
+      <label for="title">Título <span class="required">*</span></label>
+      <input id="title" name="title" type="text" required minlength="5" maxlength="120"
+             placeholder="Ex.: Reforma da Praça do Bairro"
+             value="{{ p.title|e }}">
+    </div>
+
+    <!-- Descrição -->
+    <div class="field">
+      <label for="description">Descrição <span class="required">*</span></label>
+      <textarea id="description" name="description" rows="8" required minlength="20"
+                placeholder="Explique claramente a proposta, objetivos e benefícios">{{ p.description|e }}</textarea>
+      <div class="help" id="desc-count">0 caracteres</div>
+    </div>
+
+    <!-- Bairro | Tema -->
+    <div class="grid-2">
+      <div class="field">
+        <label for="neighborhood">Bairro <span class="opcional">(opcional)</span></label>
+        <input id="neighborhood" name="neighborhood" type="text"
+               placeholder="Ex.: Alto, Várzea, São Pedro..."
+               value="{{ p.neighborhood|default('', true)|e }}">
+      </div>
+
+      <div class="field">
+        <label for="theme">Tema <span class="opcional">(opcional)</span></label>
+        <input id="theme" name="theme" type="text"
+               placeholder="Ex.: Mobilidade, Saúde, Educação..."
+               value="{{ p.theme|default('', true)|e }}">
+      </div>
+    </div>
+
+    <!-- Status opcional (mantém atual se vazio) -->
+    <div class="field field-inline">
+      <label for="status">Status <span class="opcional">(opcional)</span></label>
+      <select id="status" name="status">
+        <option value="">(manter atual: {{ p.status }})</option>
+        <option value="em_analise"  {{ 'selected' if p.status=='em_analise'  else '' }}>Em análise</option>
+        <option value="em_votacao"  {{ 'selected' if p.status=='em_votacao'  else '' }}>Em votação</option>
+        <option value="aprovada"    {{ 'selected' if p.status=='aprovada'    else '' }}>Aprovada</option>
+        <option value="rejeitada"   {{ 'selected' if p.status=='rejeitada'   else '' }}>Rejeitada</option>
+      </select>
+    </div>
+
+    <!-- Ações -->
+    <div class="actions">
+      <a class="btn" href="{{ url_for('propostas', pid=p.id) }}">
+        <i class="fa-solid fa-arrow-left"></i> Voltar
+      </a>
+      <button class="btn btn-primary" type="submit">
+        <i class="fa-solid fa-floppy-disk"></i> Salvar alterações
+      </button>
+    </div>
+  </form>
+</main>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

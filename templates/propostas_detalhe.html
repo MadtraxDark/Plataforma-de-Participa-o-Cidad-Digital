@@ -39,10 +39,17 @@
   </article>
 
   <h3 class="section-title">Comentários</h3>
-  <form method="post" action="{{ url_for('comentar', pid=prop.id) }}" class="card grid" style="gap:10px">
-    <textarea name="content" rows="3" placeholder="Escreva um comentário..." required></textarea>
-    <button class="btn btn-primary" type="submit"><i class="fa-solid fa-paper-plane"></i> Publicar</button>
-  </form>
+<form method="post" action="{{ url_for('comentar', pid=prop.id) }}" class="card form-panel no-hover">
+  <div class="field">
+    <label for="content">Escreva um comentário</label>
+    <textarea id="content" name="content" rows="3" placeholder="Digite aqui..." required></textarea>
+  </div>
+  <div class="actions">
+    <button class="btn btn-primary" type="submit">
+      <i class="fa-solid fa-paper-plane"></i> Publicar
+    </button>
+  </div>
+</form>
 
   <section class="grid">
     {% for c in comments %}
@@ -51,7 +58,7 @@
         <p>{{ c.content }}</p>
       </div>
     {% else %}
-      <div class="card">Nenhum comentário ainda.</div>
+      <div class="card no-hover">Nenhum comentário ainda.</div>
     {% endfor %}
   </section>
 </main>

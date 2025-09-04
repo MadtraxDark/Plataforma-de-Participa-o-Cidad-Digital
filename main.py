@@ -176,6 +176,14 @@ def login_required(view):
 def current_user_id():
     return session.get("user_id")
 
+# ===== Helpers de autorização (autor da proposta) =====
+def is_author_of(pid: int, uid: int) -> bool:
+    if not uid:
+        return False
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("SELECT 1 FROM public.proposals WHERE id=%s AND author_id=%s", (pid, uid))
+        return cur.fetchone() is not None
+
 # ========= Recuperação de senha (tokens + e-mail) =========
 serializer = URLSafeTimedSerializer(app.secret_key)
 
@@ -392,7 +400,7 @@ def reset_password(token):
 @app.route("/logout", methods=["GET", "POST"])
 @login_required
 def logout():
-    session.clear
+    session.clear()  # <-- corrigido
     flash("Você saiu da sua conta.", "info")
     return redirect(url_for("login"))
 
@@ -402,7 +410,7 @@ def logout():
 def propostas():
     with get_conn() as conn, conn.cursor() as cur:
         cur.execute("""
-            SELECT p.id, p.title, p.status,
+            SELECT p.id, p.title, p.status, p.author_id,
                    COALESCE(p.neighborhood,'') AS neighborhood,
                    COALESCE(p.theme,'') AS theme,
                    u.name AS author_name,
@@ -441,6 +449,56 @@ def propostas_nova():
         return redirect(url_for("proposta_detalhe", pid=pid))
     return render_template("propostas_nova.html", title="Nova Proposta")
 
+# ======= Editar proposta (autor somente; pode editar sempre) =======
+@app.route("/propostas/<int:pid>/editar", methods=["GET", "POST"])
+@login_required
+def propostas_editar(pid):
+    uid = current_user_id()
+    if not is_author_of(pid, uid):
+        flash("Você não tem permissão para editar esta proposta.", "danger")
+        return redirect(url_for("proposta_detalhe", pid=pid))
+
+    if request.method == "POST":
+        title = (request.form.get("title") or "").strip()
+        description = (request.form.get("description") or "").strip()
+        neighborhood = (request.form.get("neighborhood") or "").strip()
+        theme = (request.form.get("theme") or "").strip()
+        status = (request.form.get("status") or "").strip() or None
+
+        if len(title) < 5:
+            flash("O título precisa de ao menos 5 caracteres.", "warning")
+            return redirect(url_for("propostas_editar", pid=pid))
+
+        with get_conn() as conn, conn.cursor() as cur:
+            cur.execute("""
+                UPDATE public.proposals
+                   SET title=%s,
+                       description=%s,
+                       neighborhood=COALESCE(%s,''),
+                       theme=COALESCE(%s,''),
+                       status=COALESCE(%s, status)
+                 WHERE id=%s AND author_id=%s
+            """, (title, description, neighborhood, theme, status, pid, uid))
+            conn.commit()
+
+        flash("Proposta atualizada com sucesso.", "success")
+        return redirect(url_for("propostas", pid=pid))
+
+    # GET
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("""
+            SELECT id, title, description, neighborhood, theme, status
+              FROM public.proposals
+             WHERE id=%s AND author_id=%s
+        """, (pid, uid))
+        p = cur.fetchone()
+
+    if not p:
+        flash("Proposta não encontrada.", "danger")
+        return redirect(url_for("propostas"))
+
+    return render_template("propostas_editar.html", title=f"Editar: {p['title']}", p=p)
+
 @app.route("/propostas/<int:pid>")
 @login_required
 def proposta_detalhe(pid):
@@ -469,7 +527,13 @@ def proposta_detalhe(pid):
         """, (pid,))
         comments = cur.fetchall()
 
-    return render_template("propostas_detalhe.html", title=prop["title"], prop=prop, comments=comments)
+    return render_template(
+        "propostas_detalhe.html",
+        title=prop["title"],
+        prop=prop,
+        comments=comments,
+        pode_editar=(prop["author_id"] == current_user_id())
+    )
 
 @app.post("/propostas/<int:pid>/votar")
 @login_required

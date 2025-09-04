@@ -35,7 +35,18 @@
         <p class="hero-subtitle">Autor: {{ p.author_name }} — Status: {{ p.status }}</p>
         <p class="hero-subtitle">Bairro: {{ p.neighborhood or '—' }} • Tema: {{ p.theme or '—' }}</p>
         <p class="hero-subtitle">Suporte: {{ p.yes }} sim / {{ p.no }} não</p>
-        <a class="btn" href="{{ url_for('proposta_detalhe', pid=p.id) }}"><i class="fa-solid fa-arrow-right"></i> Abrir</a>
+
+        <div class="actions">
+          <a class="btn" href="{{ url_for('proposta_detalhe', pid=p.id) }}">
+            <i class="fa-solid fa-arrow-right"></i> Abrir
+          </a>
+
+          {% if p.author_id == session.get('user_id') %}
+            <a class="btn btn-primary" href="{{ url_for('propostas_editar', pid=p.id) }}">
+              <i class="fa-solid fa-pen-to-square"></i> Editar
+            </a>
+          {% endif %}
+        </div>
       </article>
     {% else %}
       <div class="card">Nenhuma proposta cadastrada.</div>
