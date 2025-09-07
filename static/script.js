@@ -434,3 +434,44 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener('load', update);
   }
 })();
+
+/* =========================================================
+          MODAL DE CONFIRMAÇÃO (Excluir proposta)
+   ========================================================= */
+
+(function () {
+  const backdrop = document.getElementById('confirm-backdrop');
+  const txt = document.getElementById('confirm-text');
+  const btnOk = document.getElementById('confirm-ok');
+  const btnCancel = document.getElementById('confirm-cancel');
+  let pendingForm = null;
+
+  function openModal(message, form) {
+    txt.textContent = message || 'Tem certeza?';
+    pendingForm = form;
+    backdrop.hidden = false;
+  }
+  function closeModal() {
+    backdrop.hidden = true;
+    pendingForm = null;
+  }
+
+  document.addEventListener('click', (e) => {
+    // fecha se clicar fora do card
+    if (e.target === backdrop) closeModal();
+  });
+  btnCancel.addEventListener('click', closeModal);
+  btnOk.addEventListener('click', () => {
+    if (pendingForm) pendingForm.submit();
+    closeModal();
+  });
+
+  // intercepta todos os forms com a classe js-delete-form
+  document.querySelectorAll('form.js-delete-form').forEach(form => {
+    form.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const msg = form.getAttribute('data-confirm') || 'Tem certeza?';
+      openModal(msg, form);
+    });
+  });
+})()

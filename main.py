@@ -648,6 +648,22 @@ def relatorios():
 def integracoes():
     return render_template("integracoes.html", title="Integrações Públicas")
 
+# ======= Excluir proposta (autor somente) =======
+@app.route("/propostas/<int:pid>/excluir", methods=["POST"])
+@login_required
+def propostas_excluir(pid):
+    uid = current_user_id()
+    if not is_author_of(pid, uid):
+        flash("Você não tem permissão para excluir esta proposta.", "danger")
+        return redirect(url_for("propostas"))
+
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("DELETE FROM public.proposals WHERE id=%s AND author_id=%s", (pid, uid))
+        conn.commit()
+
+    flash("Proposta excluída com sucesso.", "success")
+    return redirect(url_for("propostas"))
+
 # ========= APIs usadas pelo dashboard =========
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 

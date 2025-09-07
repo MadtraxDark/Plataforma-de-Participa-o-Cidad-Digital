@@ -74,6 +74,15 @@ header {
   border: none;
 }
 
+.btn-danger {
+  background: #dc2626;   /* vermelho */
+  color: #fff;
+  border: none;
+}
+.btn-danger:hover {
+  background: #b91c1c;   /* vermelho mais escuro */
+}
+
 /* ===== Hero ===== */
 .hero { text-align: center; margin: 40px 0; }
 .hero-title {
@@ -324,4 +333,23 @@ header {
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* Backdrop + modal */
+.confirm-backdrop[hidden] { display: none; }
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,.35);
+  z-index: 1000;
+  padding: 16px;
+}
+
+.confirm-modal {
+  width: min(520px, 95vw);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow);
 }
