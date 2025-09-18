@@ -75,12 +75,12 @@ header {
 }
 
 .btn-danger {
-  background: #dc2626;   /* vermelho */
+  background: #dc2626;   
   color: #fff;
   border: none;
 }
 .btn-danger:hover {
-  background: #b91c1c;   /* vermelho mais escuro */
+  background: #b91c1c;   
 }
 
 /* ===== Hero ===== */
