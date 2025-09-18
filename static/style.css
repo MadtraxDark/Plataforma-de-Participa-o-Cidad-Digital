@@ -192,6 +192,10 @@ body {
   line-height: 1;
 }
 
+.input-icon-dec {
+  pointer-events: none;
+}
+
 /* Ajuda */
 .field-help {
   display: block;
