@@ -25,7 +25,7 @@
 <main class="container">
   <section class="hero">
     <h1 class="hero-title">{{ prop.title }}</h1>
-    <p class="hero-subtitle">Autor: {{ prop.author_name }} — Status: {{ prop.status }} • Bairro: {{ prop.neighborhood or '—' }} • Tema: {{ prop.theme or '—' }}</p>
+    <p class="hero-subtitle">Autor: {{ prop.author_name }} — Status: {{ (prop.status or '').replace('_', ' ') }} • Bairro: {{ prop.neighborhood or '—' }} • Tema: {{ prop.theme or '—' }}</p>
   </section>
 
   <article class="card">

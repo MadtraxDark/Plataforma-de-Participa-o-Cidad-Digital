@@ -33,7 +33,7 @@
     {% for p in items %}
       <article class="card">
         <h3 class="hero-title" style="text-shadow:none">{{ p.title }}</h3>
-        <p class="hero-subtitle">Autor: {{ p.author_name }} — Status: {{ p.status }}</p>
+        <p class="hero-subtitle">Autor: {{ p.author_name }} — Status: {{ (p.status or '').replace('_', ' ') }}</p>
         <p class="hero-subtitle">Bairro: {{ p.neighborhood or '—' }} • Tema: {{ p.theme or '—' }}</p>
         <p class="hero-subtitle">Suporte: {{ p.yes }} sim / {{ p.no }} não</p>
 
