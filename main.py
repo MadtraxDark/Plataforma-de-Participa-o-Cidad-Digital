@@ -64,22 +64,26 @@ def validate_cpf(cpf: str) -> bool:
 def init_db():
     with get_conn() as conn, conn.cursor() as cur:
         # USERS
-        cur.execute("""
+        cur.execute(
+            """
             CREATE TABLE IF NOT EXISTS public.users (
                 id BIGSERIAL PRIMARY KEY,
-                name          TEXT        NOT NULL,
-                email         TEXT        NOT NULL,
-                cpf           TEXT        NOT NULL,
-                password_hash TEXT        NOT NULL,
-                created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-                birthdate     DATE NULL,
-                phone         TEXT NULL,
-                gender        TEXT NULL,
-                age_group     TEXT NULL,
-                schooling     TEXT NULL,
-                neighborhood  TEXT NULL
+                name              TEXT        NOT NULL,
+                email             TEXT        NOT NULL,
+                cpf               TEXT        NOT NULL,
+                password_hash     TEXT        NOT NULL,
+                created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+                birthdate         DATE NULL,
+                phone             TEXT NULL,
+                gender            TEXT NULL,
+                age_group         TEXT NULL,
+                schooling         TEXT NULL,
+                neighborhood      TEXT NULL,
+                email_confirmed   BOOLEAN     NOT NULL DEFAULT FALSE,
+                email_confirmed_at TIMESTAMPTZ
             );
-        """)
+            """
+        )
         cur.execute("""CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique_ci ON public.users (LOWER(email));""")
         cur.execute("""CREATE UNIQUE INDEX IF NOT EXISTS users_cpf_unique      ON public.users (cpf);""")
         cur.execute("""
@@ -91,6 +95,16 @@ def init_db():
               END IF;
             END$$;
         """)
+        # Migracao retroativa caso a tabela já exista (adiciona colunas)
+        cur.execute(
+            "ALTER TABLE public.users ADD COLUMN IF NOT EXISTS email_confirmed BOOLEAN NOT NULL DEFAULT FALSE;"
+        )
+        cur.execute(
+            "ALTER TABLE public.users ADD COLUMN IF NOT EXISTS email_confirmed_at TIMESTAMPTZ;"
+        )
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS users_email_confirmed_idx ON public.users (email_confirmed);"
+        )
 
         # PROPOSALS
         cur.execute("""
@@ -238,6 +252,58 @@ def send_reset_email(to_email: str, token: str):
         server.login(mail_user, mail_pass)
         server.send_message(msg)
 
+# ========= Confirmação de e-mail =========
+def generate_confirm_token(email: str) -> str:
+        return serializer.dumps(email, salt="confirm-salt")
+
+def verify_confirm_token(token: str, max_age: int = 60 * 60 * 24):  # 24h
+        try:
+                return serializer.loads(token, salt="confirm-salt", max_age=max_age)
+        except (BadSignature, SignatureExpired):
+                return None
+
+def send_confirm_email(to_email: str, token: str):
+        mail_user = os.getenv("MAIL_USER")
+        mail_pass = os.getenv("MAIL_PASS")
+        if not mail_user or not mail_pass:
+                raise RuntimeError("MAIL_USER/MAIL_PASS não configurados no .env")
+
+        confirm_url = url_for("confirm_email", token=token, _external=True)
+        body = f"""
+<!DOCTYPE html>
+<html lang=\"pt-BR\">
+    <head><meta charset=\"UTF-8\"><title>Confirme sua conta - Participa Terê</title></head>
+    <body style=\"margin:0;padding:0;background:#f5f6f7;font-family:'Segoe UI',Tahoma,Verdana,sans-serif;\">
+        <table align=\"center\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\"
+                     style=\"max-width:600px;margin:auto;background:white;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.08)\">
+            <tr><td style=\"background:linear-gradient(135deg,#0e4d2c,#2e8b57);padding:20px;text-align:center;color:white;\">
+                <h1 style=\"margin:0;font-size:22px;\">Participa Terê</h1>
+                <p style=\"margin:4px 0 0;font-size:14px;opacity:.9\">Confirmação de conta</p>
+            </td></tr>
+            <tr><td style=\"padding:30px;\">
+                <h2 style=\"color:#2c3e50;font-size:20px;margin-top:0;\">Bem-vindo!</h2>
+                <p style=\"font-size:15px;color:#34495e;line-height:1.5;\">Obrigado por se cadastrar no <strong>Participa Terê</strong>.</p>
+                <p style=\"font-size:15px;color:#34495e;line-height:1.5;\">Para ativar sua conta e poder acessar a plataforma, clique no botão abaixo. O link vale por <strong>24 horas</strong>.</p>
+                <p style=\"text-align:center;margin:30px 0;\">
+                    <a href=\"{confirm_url}\" style=\"background:#2e8b57;color:white;text-decoration:none;font-weight:600;padding:14px 28px;border-radius:8px;display:inline-block;\">Confirmar minha conta</a>
+                </p>
+                <p style=\"font-size:13px;color:#7f8c8d;line-height:1.4;\">Se você não criou esta conta, ignore este e-mail e ela será descartada.</p>
+            </td></tr>
+            <tr><td style=\"background:#ecf0f1;padding:15px;text-align:center;font-size:12px;color:#7f8c8d;\">
+                © {date.today().year} Participa Terê — Teresópolis, RJ
+            </td></tr>
+        </table>
+    </body>
+</html>
+"""
+        msg = MIMEText(body, "html", _charset="utf-8")
+        msg["Subject"] = "Confirme sua conta - Participa Terê"
+        msg["From"] = mail_user
+        msg["To"] = to_email
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+                server.login(mail_user, mail_pass)
+                server.send_message(msg)
+
 # ========= Rotas =========
 @app.route("/")
 def root():
@@ -275,20 +341,24 @@ def login():
         with get_conn() as conn, conn.cursor() as cur:
             if is_email(identifier):
                 cur.execute("""
-                    SELECT id, name, email, cpf, password_hash
+                    SELECT id, name, email, cpf, password_hash, email_confirmed
                     FROM public.users
                     WHERE LOWER(email) = LOWER(%s)
                 """, (identifier,))
             else:
                 cpf = clean_cpf(identifier)
                 cur.execute("""
-                    SELECT id, name, email, cpf, password_hash
+                    SELECT id, name, email, cpf, password_hash, email_confirmed
                     FROM public.users
                     WHERE cpf = %s
                 """, (cpf,))
             user = cur.fetchone()
 
         if user and check_password_hash(user["password_hash"], password):
+            # Bloqueia se não confirmou e-mail
+            if not user.get("email_confirmed"):
+                flash("Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada ou reenvie o link.", "warning")
+                return redirect(url_for("login"))
             session.clear()
             session["user_id"] = user["id"]
             flash("Login realizado com sucesso!", "success")
@@ -326,9 +396,17 @@ def register():
                 cur.execute("""
                     INSERT INTO public.users (name, email, cpf, password_hash, birthdate, phone)
                     VALUES (%s,%s,%s,%s,%s,%s)
+                    RETURNING email;
                 """, (name, email, cpf, pw_hash, birthdate, phone))
+                created_email = cur.fetchone()["email"]
                 conn.commit()
-            flash("Conta criada com sucesso!", "success")
+            # Envia e-mail de confirmação
+            try:
+                token = generate_confirm_token(created_email)
+                send_confirm_email(created_email, token)
+                flash("Conta criada! Enviamos um e-mail para confirmação. Verifique sua caixa de entrada.", "success")
+            except Exception as mail_err:
+                flash(f"Conta criada, mas não foi possível enviar o e-mail de confirmação: {mail_err}", "danger")
             return redirect(url_for("login"))
         except UniqueViolation as e:
             msg = "E-mail ou CPF já cadastrado."
@@ -774,6 +852,54 @@ def api_notificacoes():
     return jsonify(items=items)
 
 app.register_blueprint(api_bp)
+
+# ========= Rotas de confirmação de e-mail =========
+@app.route("/confirmar/<token>")
+def confirm_email(token):
+    email = verify_confirm_token(token)
+    if not email:
+        flash("Link inválido ou expirado. Solicite um novo.", "danger")
+        return redirect(url_for("login"))
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("""SELECT id, email_confirmed FROM public.users WHERE LOWER(email)=LOWER(%s)""", (email,))
+        row = cur.fetchone()
+        if not row:
+            flash("Usuário não encontrado.", "danger")
+            return redirect(url_for("login"))
+        if row.get("email_confirmed"):
+            flash("E-mail já confirmado. Você já pode entrar.", "info")
+            return redirect(url_for("login"))
+        cur.execute("UPDATE public.users SET email_confirmed=TRUE, email_confirmed_at=now() WHERE id=%s", (row["id"],))
+        conn.commit()
+    flash("E-mail confirmado com sucesso! Agora você pode entrar.", "success")
+    return redirect(url_for("login"))
+
+@app.route("/reenviar-confirmacao", methods=["POST"])
+def resend_confirmation():
+    identifier = (request.form.get("identifier") or "").strip().lower()
+    if not identifier:
+        flash("Informe seu e-mail ou CPF para reenviar.", "warning")
+        return redirect(url_for("login"))
+    with get_conn() as conn, conn.cursor() as cur:
+        if is_email(identifier):
+            cur.execute("SELECT email, email_confirmed FROM public.users WHERE LOWER(email)=LOWER(%s)", (identifier,))
+        else:
+            cpf = clean_cpf(identifier)
+            cur.execute("SELECT email, email_confirmed FROM public.users WHERE cpf=%s", (cpf,))
+        row = cur.fetchone()
+    if not row:
+        flash("Usuário não encontrado.", "danger")
+        return redirect(url_for("login"))
+    if row.get("email_confirmed"):
+        flash("Este e-mail já está confirmado.", "info")
+        return redirect(url_for("login"))
+    try:
+        token = generate_confirm_token(row["email"])
+        send_confirm_email(row["email"], token)
+        flash("Reenviamos o link de confirmação.", "success")
+    except Exception as e:
+        flash(f"Falha ao reenviar: {e}", "danger")
+    return redirect(url_for("login"))
 
 if __name__ == "__main__":
     app.run(debug=True)
