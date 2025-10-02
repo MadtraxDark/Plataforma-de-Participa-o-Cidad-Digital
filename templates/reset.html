@@ -42,10 +42,10 @@
         <div class="field">
           <input type="password" id="senhaCadastro" name="password" class="form-input"
                  placeholder="Crie uma nova senha" required autocomplete="new-password"
-                 aria-describedby="pwReqs">
+                 aria-describedby="pwReqs" onpaste="return false;" oncopy="return false;" oncut="return false;">
           <i class="fas fa-eye input-icon" id="toggleSenhaCadastro" aria-label="Mostrar/ocultar senha" role="button" tabindex="0"></i>
         </div>
-        <!-- requisitos dinâmicos (reaproveita seu JS) -->
+        <!-- requisitos dinâmicos -->
         <ul id="pwReqs" class="pw-reqs" aria-live="polite">
           <li data-check="len">Mínimo de 8 caracteres</li>
           <li data-check="lower">Ao menos 1 letra minúscula</li>
@@ -59,7 +59,7 @@
         <label class="form-label" for="confirmarSenha">Confirmar nova senha</label>
         <div class="field">
           <input type="password" id="confirmarSenha" class="form-input"
-                 placeholder="Repita a senha" required autocomplete="new-password">
+                 placeholder="Repita a senha" required autocomplete="new-password" onpaste="return false;" oncopy="return false;" oncut="return false;">
           <i class="fas fa-eye input-icon" id="toggleConfirmarSenha" aria-label="Mostrar/ocultar confirmação" role="button" tabindex="0"></i>
         </div>
       </div>

@@ -41,7 +41,7 @@
         <label class="form-label" for="identificador">E-mail ou CPF</label>
         <div class="field">
           <input type="text" id="identificador" name="identifier" class="form-input"
-                 placeholder="Digite seu e-mail ou CPF" autocomplete="username" required>
+                 placeholder="Digite seu e-mail ou CPF" autocomplete="username" required onpaste="return false;" oncopy="return false;" oncut="return false;">
           <i class="fas fa-id-card input-icon input-icon-dec" id="identificadorIcon" aria-hidden="true"></i>
         </div>
       </div>
@@ -50,7 +50,7 @@
         <label class="form-label" for="senhaLogin">Senha</label>
         <div class="field">
           <input type="password" id="senhaLogin" name="password" class="form-input"
-                 placeholder="Digite sua senha" required autocomplete="current-password">
+                 placeholder="Digite sua senha" required autocomplete="current-password" onpaste="return false;" oncopy="return false;" oncut="return false;">
           <i class="fas fa-eye input-icon" id="toggleSenhaLogin" aria-label="Mostrar/ocultar senha" role="button" tabindex="0"></i>
         </div>
       </div>

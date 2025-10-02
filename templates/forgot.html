@@ -41,7 +41,7 @@
         <div class="field">
           <input type="text" id="identifier" name="identifier" class="form-input"
                  placeholder="Digite seu e-mail ou CPF" required autocomplete="username"
-                 value="{{ identifier | default('') }}">
+                 value="{{ identifier | default('') }}" onpaste="return false;" oncopy="return false;" oncut="return false;">
           <i class="fas fa-id-card input-icon" aria-hidden="true"></i>
         </div>
       </div>
