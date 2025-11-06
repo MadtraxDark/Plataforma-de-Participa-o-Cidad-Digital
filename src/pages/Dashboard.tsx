@@ -217,13 +217,13 @@ export default function Dashboard() {
               <BarChart3 className="h-5 w-5 text-emerald-600" />
               Dashboard
             </a>
-            <a
-              href="#"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg cursor-pointer"
+            <button
+              onClick={() => navigate("/consultations")}
+              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg cursor-pointer w-full text-left"
             >
               <MessageSquare className="h-5 w-5" />
               Consultas Públicas
-            </a>
+            </button>
             <a
               href="#"
               className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg cursor-pointer"
