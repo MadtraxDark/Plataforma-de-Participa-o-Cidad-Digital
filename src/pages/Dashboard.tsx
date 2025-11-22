@@ -363,7 +363,11 @@ export default function Dashboard() {
           </div>
 
           <div className="flex gap-2">
-            <Button variant="outline" className="flex-1">
+            <Button 
+              variant="outline" 
+              className="flex-1"
+              onClick={() => navigate(`/votings/${proposal.id}`)}
+            >
               <Eye className="w-4 h-4 mr-2" />
               Ver Detalhes
             </Button>
@@ -382,7 +386,7 @@ export default function Dashboard() {
               </>
             )}
             {proposal.status === "em_votacao" && (
-              <Button>
+              <Button onClick={() => navigate(`/votings/${proposal.id}`)}>
                 <Vote className="w-4 h-4 mr-2" />
                 Votar Agora
               </Button>

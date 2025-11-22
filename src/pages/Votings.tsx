@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   Vote,
   Clock,
@@ -64,12 +64,14 @@ interface Voting {
 
 export default function Votings() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id?: string }>();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("todas");
   const [selectedVoting, setSelectedVoting] = useState<Voting | null>(null);
   const [voteDialogOpen, setVoteDialogOpen] = useState(false);
   const [selectedVote, setSelectedVote] = useState<string>("");
+  const [hasOpenedFromUrl, setHasOpenedFromUrl] = useState(false);
 
   const handleLogout = () => {
     toast.success("Logout realizado com sucesso!");
@@ -185,6 +187,17 @@ export default function Votings() {
     },
   ];
 
+  // Efeito para selecionar votação quando ID for passado via URL
+  useEffect(() => {
+    if (id && !hasOpenedFromUrl && votings.length > 0) {
+      const voting = votings.find((v) => v.id === parseInt(id));
+      if (voting) {
+        handleOpenVote(voting);
+        setHasOpenedFromUrl(true);
+      }
+    }
+  }, [id]);
+
   const categories = [
     "todas",
     "Mobilidade",
@@ -208,7 +221,11 @@ export default function Votings() {
   const closedVotings = filteredVotings.filter((v) => v.status === "encerrada");
   const scheduledVotings = filteredVotings.filter((v) => v.status === "agendada");
 
-  const handleVote = (voting: Voting) => {
+  const handleOpenVote = (voting: Voting) => {
+    if (voting.hasVoted) {
+      toast.error("Você já votou nesta proposta");
+      return;
+    }
     setSelectedVoting(voting);
     setSelectedVote("");
     setVoteDialogOpen(true);
@@ -217,6 +234,11 @@ export default function Votings() {
   const confirmVote = () => {
     if (!selectedVote) {
       toast.error("Por favor, selecione uma opção de voto");
+      return;
+    }
+
+    if (selectedVoting?.hasVoted) {
+      toast.error("Você já votou nesta proposta");
       return;
     }
 
@@ -335,14 +357,14 @@ export default function Votings() {
           </div>
 
           {voting.status === "ativa" && !voting.hasVoted && (
-            <Button onClick={() => handleVote(voting)} className="w-full">
+            <Button variant="outline" onClick={() => handleOpenVote(voting)} className="w-full">
               <Vote className="w-4 h-4 mr-2" />
               Votar Agora
             </Button>
           )}
 
           {voting.status === "ativa" && voting.hasVoted && (
-            <Button variant="outline" disabled className="w-full">
+            <Button disabled className="w-full">
               <CheckCircle2 className="w-4 h-4 mr-2" />
               Você já votou nesta proposta
             </Button>
@@ -655,45 +677,63 @@ export default function Votings() {
 
           {selectedVoting && (
             <div className="space-y-4">
-              <div className="p-4 bg-muted rounded-lg">
-                <h3 className="font-semibold mb-2">{selectedVoting.title}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {selectedVoting.description}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Selecione sua opção:</label>
-                <div className="space-y-2">
-                  {selectedVoting.options.map((option, index) => (
-                    <Button
-                      key={index}
-                      variant={selectedVote === option.label ? "default" : "outline"}
-                      className="w-full justify-start"
-                      onClick={() => setSelectedVote(option.label)}
-                    >
-                      {selectedVote === option.label && (
-                        <CheckCircle2 className="w-4 h-4 mr-2" />
-                      )}
-                      {option.label}
-                    </Button>
-                  ))}
+              {selectedVoting.hasVoted ? (
+                <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                  <div className="flex gap-3">
+                    <CheckCircle2 className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-amber-900 mb-1">
+                        Você já votou nesta proposta
+                      </p>
+                      <p className="text-sm text-amber-800">
+                        Seu voto foi registrado como: <span className="font-medium">{selectedVoting.userVote?.toUpperCase()}</span>
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div className="p-4 bg-muted rounded-lg">
+                    <h3 className="font-semibold mb-2">{selectedVoting.title}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedVoting.description}
+                    </p>
+                  </div>
 
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex gap-2">
-                  <AlertCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                  <div className="text-sm text-blue-900">
-                    <p className="font-medium mb-1">Importante:</p>
-                    <ul className="list-disc list-inside space-y-1 text-blue-800">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Selecione sua opção:</label>
+                    <div className="space-y-2">
+                      {selectedVoting.options.map((option, index) => (
+                        <Button
+                          key={index}
+                          variant={selectedVote === option.label ? "default" : "outline"}
+                          className="w-full justify-start"
+                          onClick={() => setSelectedVote(option.label)}
+                        >
+                          {selectedVote === option.label && (
+                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                          )}
+                          {option.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex gap-2">
+                      <AlertCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                      <div className="text-sm text-blue-900">
+                        <p className="font-medium mb-1">Importante:</p>
+                        <ul className="list-disc list-inside space-y-1 text-blue-800">
                       <li>Seu voto é anônimo e confidencial</li>
                       <li>Você não poderá alterar seu voto após confirmar</li>
                       <li>O resultado será divulgado ao final da votação</li>
                     </ul>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </>
+              )}
             </div>
           )}
 
@@ -701,10 +741,12 @@ export default function Votings() {
             <Button variant="outline" onClick={() => setVoteDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={confirmVote} disabled={!selectedVote}>
-              <Vote className="w-4 h-4 mr-2" />
-              Confirmar Voto
-            </Button>
+            {!selectedVoting?.hasVoted && (
+              <Button onClick={confirmVote} disabled={!selectedVote}>
+                <Vote className="w-4 h-4 mr-2" />
+                Confirmar Voto
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

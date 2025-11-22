@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 import Dashboard from "../pages/Dashboard";
+import Votings from "../pages/Votings";
 
 export default function AppRoutes() {
   return (
@@ -10,6 +11,8 @@ export default function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/votings" element={<Votings />} />
+      <Route path="/votings/:id" element={<Votings />} />
     </Routes>
   );
 }
