@@ -296,7 +296,7 @@ export default function Dashboard() {
           };
         }
         return voting;
-      })
+      }),
     );
 
     // Criar notificação sobre o voto
@@ -318,8 +318,8 @@ export default function Dashboard() {
   const handleMarkNotificationAsRead = (notificationId: number) => {
     setNotifications(
       notifications.map((n) =>
-        n.id === notificationId ? { ...n, read: true } : n
-      )
+        n.id === notificationId ? { ...n, read: true } : n,
+      ),
     );
   };
 
@@ -362,15 +362,15 @@ export default function Dashboard() {
   const confirmDeleteVoting = () => {
     if (votingToDelete !== null) {
       setVotings(votings.filter((v: Voting) => v.id !== votingToDelete));
-      
+
       // Remover comentários da votação
       const updatedComments = { ...votingComments };
       delete updatedComments[votingToDelete];
       setVotingComments(updatedComments);
-      
+
       // Remover do array de votados
-      setVotedVotings(votedVotings.filter(id => id !== votingToDelete));
-      
+      setVotedVotings(votedVotings.filter((id) => id !== votingToDelete));
+
       toast.success("Votação excluída com sucesso!");
       setDeleteDialogOpen(false);
       setVotingToDelete(null);
@@ -715,7 +715,7 @@ export default function Dashboard() {
                                       {option.percentage.toFixed(0)}%
                                     </span>
                                   </div>
-                                )
+                                ),
                               )}
                             </div>
                           </div>
@@ -730,7 +730,7 @@ export default function Dashboard() {
                             <span className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
                               {new Date(voting.endDate).toLocaleDateString(
-                                "pt-BR"
+                                "pt-BR",
                               )}
                             </span>
                             <span
@@ -913,7 +913,7 @@ export default function Dashboard() {
                           {(
                             votings.reduce(
                               (acc: number, v: Voting) => acc + v.totalVotes,
-                              0
+                              0,
                             ) + votedVotings.length
                           ).toLocaleString()}
                         </p>
@@ -977,13 +977,13 @@ export default function Dashboard() {
                           .toLowerCase()
                           .includes(searchQuery.toLowerCase())) &&
                       (votingFilter === "todas" ||
-                        voting.category === votingFilter)
+                        voting.category === votingFilter),
                   )
                   .map((voting: Voting) => {
                     const daysRemaining = Math.ceil(
                       (new Date(voting.endDate).getTime() -
                         new Date().getTime()) /
-                        (1000 * 60 * 60 * 24)
+                        (1000 * 60 * 60 * 24),
                     );
 
                     const hasVoted = votedVotings.includes(voting.id);
@@ -997,20 +997,20 @@ export default function Dashboard() {
                           opt.label === voteData?.option
                             ? opt.votes + voteData.increment
                             : opt.votes,
-                      })
+                      }),
                     );
 
                     // Recalcula as porcentagens
                     const totalVotes = updatedOptions.reduce(
                       (sum: number, opt: VotingOption) => sum + opt.votes,
-                      0
+                      0,
                     );
                     const optionsWithPercentage = updatedOptions.map(
                       (opt: VotingOption) => ({
                         ...opt,
                         percentage:
                           totalVotes > 0 ? (opt.votes / totalVotes) * 100 : 0,
-                      })
+                      }),
                     );
 
                     return (
@@ -1074,7 +1074,7 @@ export default function Dashboard() {
                                     className="h-2"
                                   />
                                 </div>
-                              )
+                              ),
                             )}
                           </div>
 
@@ -1091,7 +1091,7 @@ export default function Dashboard() {
                                 <span>
                                   Até{" "}
                                   {new Date(voting.endDate).toLocaleDateString(
-                                    "pt-BR"
+                                    "pt-BR",
                                   )}
                                 </span>
                               </div>
@@ -1192,7 +1192,7 @@ export default function Dashboard() {
                       votes: number;
                       percentage: number;
                     },
-                    index: number
+                    index: number,
                   ) => (
                     <div
                       key={index}
@@ -1210,7 +1210,7 @@ export default function Dashboard() {
                         )}
                       </div>
                     </div>
-                  )
+                  ),
                 )}
               </div>
             </div>
@@ -1264,12 +1264,23 @@ export default function Dashboard() {
 
             <div className="space-y-2">
               <Label htmlFor="voting-category">Categoria</Label>
-              <Input
-                id="voting-category"
-                placeholder="Ex: Mobilidade, Infraestrutura, Meio Ambiente..."
-                value={votingCategory}
-                onChange={(e) => setVotingCategory(e.target.value)}
-              />
+              <Select value={votingCategory} onValueChange={setVotingCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Mobilidade">Mobilidade</SelectItem>
+                  <SelectItem value="Infraestrutura">Infraestrutura</SelectItem>
+                  <SelectItem value="Meio Ambiente">Meio Ambiente</SelectItem>
+                  <SelectItem value="Saúde">Saúde</SelectItem>
+                  <SelectItem value="Educação">Educação</SelectItem>
+                  <SelectItem value="Segurança">Segurança</SelectItem>
+                  <SelectItem value="Cultura">Cultura</SelectItem>
+                  <SelectItem value="Esporte">Esporte</SelectItem>
+                  <SelectItem value="Urbanismo">Urbanismo</SelectItem>
+                  <SelectItem value="Outros">Outros</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -1355,7 +1366,7 @@ export default function Dashboard() {
                         </div>
                       </div>
                     </div>
-                  )
+                  ),
                 )
               )}
             </div>
@@ -1399,10 +1410,11 @@ export default function Dashboard() {
               Confirmar Exclusão
             </DialogTitle>
             <DialogDescription className="text-gray-600">
-              Tem certeza que deseja excluir esta votação? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir esta votação? Esta ação não pode
+              ser desfeita.
             </DialogDescription>
           </DialogHeader>
-          
+
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"

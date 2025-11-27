@@ -93,7 +93,9 @@ export default function Login() {
       // Simula envio de email
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      toast.success("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
+      toast.success(
+        "E-mail de recuperação enviado! Verifique sua caixa de entrada.",
+      );
       setForgotPasswordOpen(false);
       setResetEmail("");
     } catch (error) {
@@ -344,7 +346,8 @@ export default function Login() {
               Recuperar Senha
             </DialogTitle>
             <DialogDescription className="text-gray-600">
-              Digite seu e-mail cadastrado. Enviaremos um link para redefinir sua senha.
+              Digite seu e-mail cadastrado. Enviaremos um link para redefinir
+              sua senha.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleForgotPassword} className="space-y-4 mt-4">
