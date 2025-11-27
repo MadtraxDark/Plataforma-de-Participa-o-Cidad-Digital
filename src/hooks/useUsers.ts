@@ -1,22 +1,14 @@
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-} from '@tanstack/react-query';
-import apiClient from '@/lib/api';
-import type {
-  User,
-  CreateUserRequest,
-  UpdateUserRequest,
-} from '@/lib/types';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import apiClient from "@/lib/api";
+import type { User, CreateUserRequest, UpdateUserRequest } from "@/lib/types";
 
-const USERS_QUERY_KEY = ['users'];
+const USERS_QUERY_KEY = ["users"];
 
 export const useUsers = () => {
   return useQuery({
     queryKey: USERS_QUERY_KEY,
     queryFn: async () => {
-      const response = await apiClient.get<User[]>('/api/users');
+      const response = await apiClient.get<User[]>("/api/users");
       return response.data;
     },
   });
@@ -38,7 +30,7 @@ export const useCreateUser = () => {
 
   return useMutation({
     mutationFn: async (data: CreateUserRequest) => {
-      const response = await apiClient.post<User>('/api/users', data);
+      const response = await apiClient.post<User>("/api/users", data);
       return response.data;
     },
     onSuccess: () => {

@@ -219,7 +219,9 @@ export default function Votings() {
 
   const activeVotings = filteredVotings.filter((v) => v.status === "ativa");
   const closedVotings = filteredVotings.filter((v) => v.status === "encerrada");
-  const scheduledVotings = filteredVotings.filter((v) => v.status === "agendada");
+  const scheduledVotings = filteredVotings.filter(
+    (v) => v.status === "agendada",
+  );
 
   const handleOpenVote = (voting: Voting) => {
     if (voting.hasVoted) {
@@ -290,7 +292,7 @@ export default function Votings() {
   const VotingCard = ({ voting }: { voting: Voting }) => {
     const daysRemaining = getDaysRemaining(voting.endDate);
     const leadingOption = voting.options.reduce((prev, current) =>
-      prev.percentage > current.percentage ? prev : current
+      prev.percentage > current.percentage ? prev : current,
     );
 
     return (
@@ -350,14 +352,19 @@ export default function Votings() {
               <div className="flex items-center gap-1 text-orange-600">
                 <Clock className="w-4 h-4" />
                 <span className="font-medium">
-                  {daysRemaining} {daysRemaining === 1 ? "dia" : "dias"} restantes
+                  {daysRemaining} {daysRemaining === 1 ? "dia" : "dias"}{" "}
+                  restantes
                 </span>
               </div>
             )}
           </div>
 
           {voting.status === "ativa" && !voting.hasVoted && (
-            <Button variant="outline" onClick={() => handleOpenVote(voting)} className="w-full">
+            <Button
+              variant="outline"
+              onClick={() => handleOpenVote(voting)}
+              className="w-full"
+            >
               <Vote className="w-4 h-4 mr-2" />
               Votar Agora
             </Button>
@@ -374,7 +381,8 @@ export default function Votings() {
             <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
               <AlertCircle className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">
-                Votação encerrada • Opção vencedora: <strong>{leadingOption.label}</strong>
+                Votação encerrada • Opção vencedora:{" "}
+                <strong>{leadingOption.label}</strong>
               </span>
             </div>
           )}
@@ -501,7 +509,9 @@ export default function Votings() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Votações Ativas</p>
+                    <p className="text-sm text-muted-foreground">
+                      Votações Ativas
+                    </p>
                     <p className="text-2xl font-bold">{activeVotings.length}</p>
                   </div>
                   <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -531,9 +541,13 @@ export default function Votings() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Total de Votos</p>
+                    <p className="text-sm text-muted-foreground">
+                      Total de Votos
+                    </p>
                     <p className="text-2xl font-bold">
-                      {votings.reduce((acc, v) => acc + v.totalVotes, 0).toLocaleString()}
+                      {votings
+                        .reduce((acc, v) => acc + v.totalVotes, 0)
+                        .toLocaleString()}
                     </p>
                   </div>
                   <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -548,7 +562,9 @@ export default function Votings() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Agendadas</p>
-                    <p className="text-2xl font-bold">{scheduledVotings.length}</p>
+                    <p className="text-2xl font-bold">
+                      {scheduledVotings.length}
+                    </p>
                   </div>
                   <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                     <Clock className="w-6 h-6 text-orange-600" />
@@ -573,7 +589,10 @@ export default function Votings() {
                     />
                   </div>
                 </div>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <Select
+                  value={selectedCategory}
+                  onValueChange={setSelectedCategory}
+                >
                   <SelectTrigger className="w-full md:w-[200px]">
                     <Filter className="w-4 h-4 mr-2" />
                     <SelectValue placeholder="Categoria" />
@@ -670,8 +689,8 @@ export default function Votings() {
           <DialogHeader>
             <DialogTitle>Registrar Voto</DialogTitle>
             <DialogDescription>
-              Escolha sua opção de voto para esta proposta. Seu voto é anônimo e não
-              poderá ser alterado.
+              Escolha sua opção de voto para esta proposta. Seu voto é anônimo e
+              não poderá ser alterado.
             </DialogDescription>
           </DialogHeader>
 
@@ -686,7 +705,10 @@ export default function Votings() {
                         Você já votou nesta proposta
                       </p>
                       <p className="text-sm text-amber-800">
-                        Seu voto foi registrado como: <span className="font-medium">{selectedVoting.userVote?.toUpperCase()}</span>
+                        Seu voto foi registrado como:{" "}
+                        <span className="font-medium">
+                          {selectedVoting.userVote?.toUpperCase()}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -694,19 +716,27 @@ export default function Votings() {
               ) : (
                 <>
                   <div className="p-4 bg-muted rounded-lg">
-                    <h3 className="font-semibold mb-2">{selectedVoting.title}</h3>
+                    <h3 className="font-semibold mb-2">
+                      {selectedVoting.title}
+                    </h3>
                     <p className="text-sm text-muted-foreground">
                       {selectedVoting.description}
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Selecione sua opção:</label>
+                    <label className="text-sm font-medium">
+                      Selecione sua opção:
+                    </label>
                     <div className="space-y-2">
                       {selectedVoting.options.map((option, index) => (
                         <Button
                           key={index}
-                          variant={selectedVote === option.label ? "default" : "outline"}
+                          variant={
+                            selectedVote === option.label
+                              ? "default"
+                              : "outline"
+                          }
                           className="w-full justify-start"
                           onClick={() => setSelectedVote(option.label)}
                         >
@@ -725,10 +755,14 @@ export default function Votings() {
                       <div className="text-sm text-blue-900">
                         <p className="font-medium mb-1">Importante:</p>
                         <ul className="list-disc list-inside space-y-1 text-blue-800">
-                      <li>Seu voto é anônimo e confidencial</li>
-                      <li>Você não poderá alterar seu voto após confirmar</li>
-                      <li>O resultado será divulgado ao final da votação</li>
-                    </ul>
+                          <li>Seu voto é anônimo e confidencial</li>
+                          <li>
+                            Você não poderá alterar seu voto após confirmar
+                          </li>
+                          <li>
+                            O resultado será divulgado ao final da votação
+                          </li>
+                        </ul>
                       </div>
                     </div>
                   </div>

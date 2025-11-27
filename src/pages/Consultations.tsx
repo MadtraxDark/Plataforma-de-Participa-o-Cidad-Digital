@@ -243,7 +243,7 @@ export default function Consultations() {
                     <Badge
                       variant="outline"
                       className={getStatusBadgeClass(
-                        selectedConsultation.status
+                        selectedConsultation.status,
                       )}
                     >
                       {selectedConsultation.status}

@@ -30,18 +30,30 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // Simulando autenticação (substituir por chamada real à API)
+      if (!formData.email || !formData.password) {
+        toast.error("Preencha todos os campos");
+        setLoading(false);
+        return;
+      }
+
+      // Simula login com qualquer credencial
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      if (formData.email && formData.password) {
-        toast.success("Login realizado com sucesso!");
-        navigate("/dashboard");
-      } else {
-        toast.error("Preencha todos os campos");
-      }
-    } catch {
+      // Salva token mock no localStorage
+      localStorage.setItem("auth_token", "mock_token_" + Date.now());
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          id: "1",
+          name: "Usuário",
+          email: formData.email,
+        }),
+      );
+
+      toast.success("Login realizado com sucesso!");
+      navigate("/dashboard", { replace: true });
+    } catch (error) {
       toast.error("Erro ao fazer login. Tente novamente.");
-    } finally {
       setLoading(false);
     }
   };

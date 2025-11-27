@@ -1,11 +1,11 @@
 // Auth hooks
-export * from './useAuth';
+export * from "./useAuth";
 
 // User hooks
-export * from './useUsers';
+export * from "./useUsers";
 
 // Proposal hooks
-export * from './useProposals';
+export * from "./useProposals";
 
 // Comment hooks
-export * from './useComments';
+export * from "./useComments";

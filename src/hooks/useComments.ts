@@ -1,16 +1,12 @@
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-} from '@tanstack/react-query';
-import apiClient from '@/lib/api';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import apiClient from "@/lib/api";
 import type {
   Comment,
   CreateCommentRequest,
   UpdateCommentRequest,
-} from '@/lib/types';
+} from "@/lib/types";
 
-const COMMENTS_QUERY_KEY = ['comments'];
+const COMMENTS_QUERY_KEY = ["comments"];
 
 export const useComment = (id: number) => {
   return useQuery({
@@ -25,10 +21,10 @@ export const useComment = (id: number) => {
 
 export const useProposalComments = (proposalId: number) => {
   return useQuery({
-    queryKey: [...COMMENTS_QUERY_KEY, 'proposal', proposalId],
+    queryKey: [...COMMENTS_QUERY_KEY, "proposal", proposalId],
     queryFn: async () => {
       const response = await apiClient.get<Comment[]>(
-        `/api/comments/proposal/${proposalId}`
+        `/api/comments/proposal/${proposalId}`,
       );
       return response.data;
     },
@@ -38,10 +34,10 @@ export const useProposalComments = (proposalId: number) => {
 
 export const useUserComments = (userId: number) => {
   return useQuery({
-    queryKey: [...COMMENTS_QUERY_KEY, 'user', userId],
+    queryKey: [...COMMENTS_QUERY_KEY, "user", userId],
     queryFn: async () => {
       const response = await apiClient.get<Comment[]>(
-        `/api/comments/user/${userId}`
+        `/api/comments/user/${userId}`,
       );
       return response.data;
     },
@@ -54,12 +50,12 @@ export const useCreateComment = () => {
 
   return useMutation({
     mutationFn: async (data: CreateCommentRequest) => {
-      const response = await apiClient.post<Comment>('/api/comments', data);
+      const response = await apiClient.post<Comment>("/api/comments", data);
       return response.data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({
-        queryKey: [...COMMENTS_QUERY_KEY, 'proposal', data.proposal_id],
+        queryKey: [...COMMENTS_QUERY_KEY, "proposal", data.proposal_id],
       });
     },
   });
@@ -72,13 +68,13 @@ export const useUpdateComment = (id: number) => {
     mutationFn: async (data: UpdateCommentRequest) => {
       const response = await apiClient.put<Comment>(
         `/api/comments/${id}`,
-        data
+        data,
       );
       return response.data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({
-        queryKey: [...COMMENTS_QUERY_KEY, 'proposal', data.proposal_id],
+        queryKey: [...COMMENTS_QUERY_KEY, "proposal", data.proposal_id],
       });
       queryClient.invalidateQueries({ queryKey: [...COMMENTS_QUERY_KEY, id] });
     },
