@@ -5,6 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Mail,
   Lock,
   Eye,
@@ -24,6 +31,9 @@ export default function Login() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +73,30 @@ export default function Login() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetLoading(true);
+
+    try {
+      if (!resetEmail) {
+        toast.error("Digite seu e-mail");
+        setResetLoading(false);
+        return;
+      }
+
+      // Simula envio de email
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      toast.success("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
+      setForgotPasswordOpen(false);
+      setResetEmail("");
+    } catch (error) {
+      toast.error("Erro ao enviar e-mail. Tente novamente.");
+    } finally {
+      setResetLoading(false);
+    }
   };
 
   return (
@@ -239,7 +273,7 @@ export default function Login() {
 
               <button
                 type="button"
-                onClick={() => toast("Funcionalidade em desenvolvimento")}
+                onClick={() => setForgotPasswordOpen(true)}
                 className="text-sm font-medium text-emerald-600 hover:text-emerald-500 transition-colors cursor-pointer"
               >
                 Esqueceu a senha?
@@ -297,6 +331,72 @@ export default function Login() {
           </div>
         </div>
       </div>
+
+      {/* Dialog de Recuperação de Senha */}
+      <Dialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-gray-900">
+              Recuperar Senha
+            </DialogTitle>
+            <DialogDescription className="text-gray-600">
+              Digite seu e-mail cadastrado. Enviaremos um link para redefinir sua senha.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleForgotPassword} className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="reset-email" className="text-gray-700">
+                E-mail <span className="text-red-500">*</span>
+              </Label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                  <Mail className="h-5 w-5 text-gray-400" />
+                </div>
+                <Input
+                  id="reset-email"
+                  name="reset-email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  className="pl-11 h-12 text-base"
+                  placeholder="seu@email.com"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setForgotPasswordOpen(false);
+                  setResetEmail("");
+                }}
+                className="flex-1 h-11"
+                disabled={resetLoading}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={resetLoading}
+                className="flex-1 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 h-11 flex items-center justify-center"
+              >
+                {resetLoading ? (
+                  <>
+                    <Loader2 className="animate-spin h-5 w-5 mr-2" />
+                    Enviando...
+                  </>
+                ) : (
+                  "Enviar Link"
+                )}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

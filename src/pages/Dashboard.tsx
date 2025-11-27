@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Users,
@@ -9,18 +9,16 @@ import {
   Menu,
   X,
   LogOut,
-  Settings,
   FileText,
-  Calendar,
   ThumbsUp,
   ChevronRight,
-  Megaphone,
-  ShieldCheck,
   BarChart3,
   CheckCircle2,
   Clock,
   AlertCircle,
   Plus,
+  MessageSquare,
+  Send,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
@@ -52,6 +50,24 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
+type VotingOption = {
+  label: string;
+  votes: number;
+  percentage: number;
+};
+
+type Voting = {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  status: string;
+  endDate: string;
+  totalVotes: number;
+  hasVoted: boolean;
+  options: VotingOption[];
+};
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -64,61 +80,86 @@ export default function Dashboard() {
   const [votingDescription, setVotingDescription] = useState("");
   const [votingCategory, setVotingCategory] = useState("");
   const [votingDialogOpen, setVotingDialogOpen] = useState(false);
-  const [votings, setVotings] = useState([
-    {
-      id: 1,
-      title: "Ampliação da Ciclovia na Avenida Principal",
-      description:
-        "Proposta para estender a ciclovia existente na Avenida Principal em mais 5 km.",
-      category: "Mobilidade",
-      status: "ativa",
-      endDate: "2025-12-02",
-      totalVotes: 0,
-      hasVoted: false,
-      options: [
-        { label: "A favor", votes: 0, percentage: 0 },
-        { label: "Contra", votes: 0, percentage: 0 },
-        { label: "Abstenção", votes: 0, percentage: 0 },
-      ],
-    },
-    {
-      id: 2,
-      title: "Construção de Nova Praça no Bairro Central",
-      description:
-        "Votação sobre a construção de uma praça pública com área verde.",
-      category: "Infraestrutura",
-      status: "ativa",
-      endDate: "2025-11-29",
-      totalVotes: 0,
-      hasVoted: false,
-      options: [
-        { label: "A favor", votes: 0, percentage: 0 },
-        { label: "Contra", votes: 0, percentage: 0 },
-        { label: "Abstenção", votes: 0, percentage: 0 },
-      ],
-    },
-    {
-      id: 3,
-      title: "Implementação de Coleta Seletiva",
-      description:
-        "Expandir o programa de coleta seletiva para todos os bairros.",
-      category: "Meio Ambiente",
-      status: "ativa",
-      endDate: "2025-11-30",
-      totalVotes: 0,
-      hasVoted: false,
-      options: [
-        { label: "A favor", votes: 0, percentage: 0 },
-        { label: "Contra", votes: 0, percentage: 0 },
-        { label: "Abstenção", votes: 0, percentage: 0 },
-      ],
-    },
-  ]);
-  const [selectedVoting, setSelectedVoting] = useState<
-    (typeof votings)[0] | null
-  >(null);
+  const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
+  const [selectedVotingForComments, setSelectedVotingForComments] =
+    useState<Voting | null>(null);
+  const [newComment, setNewComment] = useState("");
+  const [votingComments, setVotingComments] = useState<
+    Record<
+      number,
+      Array<{
+        id: number;
+        author: string;
+        text: string;
+        time: string;
+      }>
+    >
+  >(() => {
+    const saved = localStorage.getItem("votingComments");
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [votings, setVotings] = useState<Voting[]>(() => {
+    const saved = localStorage.getItem("votings");
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    return [
+      {
+        id: 1,
+        title: "Ampliação da Ciclovia na Avenida Principal",
+        description:
+          "Proposta para estender a ciclovia existente na Avenida Principal em mais 5 km.",
+        category: "Mobilidade",
+        status: "ativa",
+        endDate: "2025-12-02",
+        totalVotes: 0,
+        hasVoted: false,
+        options: [
+          { label: "A favor", votes: 0, percentage: 0 },
+          { label: "Contra", votes: 0, percentage: 0 },
+          { label: "Abstenção", votes: 0, percentage: 0 },
+        ],
+      },
+      {
+        id: 2,
+        title: "Construção de Nova Praça no Bairro Central",
+        description:
+          "Votação sobre a construção de uma praça pública com área verde.",
+        category: "Infraestrutura",
+        status: "ativa",
+        endDate: "2025-11-29",
+        totalVotes: 0,
+        hasVoted: false,
+        options: [
+          { label: "A favor", votes: 0, percentage: 0 },
+          { label: "Contra", votes: 0, percentage: 0 },
+          { label: "Abstenção", votes: 0, percentage: 0 },
+        ],
+      },
+      {
+        id: 3,
+        title: "Implementação de Coleta Seletiva",
+        description:
+          "Expandir o programa de coleta seletiva para todos os bairros.",
+        category: "Meio Ambiente",
+        status: "ativa",
+        endDate: "2025-11-30",
+        totalVotes: 0,
+        hasVoted: false,
+        options: [
+          { label: "A favor", votes: 0, percentage: 0 },
+          { label: "Contra", votes: 0, percentage: 0 },
+          { label: "Abstenção", votes: 0, percentage: 0 },
+        ],
+      },
+    ];
+  });
+  const [selectedVoting, setSelectedVoting] = useState<Voting | null>(null);
   const [selectedOption, setSelectedOption] = useState("");
-  const [votedVotings, setVotedVotings] = useState<number[]>([]);
+  const [votedVotings, setVotedVotings] = useState<number[]>(() => {
+    const saved = localStorage.getItem("votedVotings");
+    return saved ? JSON.parse(saved) : [];
+  });
   const [voteIncrements, setVoteIncrements] = useState<
     Record<number, { option: string; increment: number }>
   >({});
@@ -130,7 +171,27 @@ export default function Dashboard() {
       time: string;
       read: boolean;
     }>
-  >([]);
+  >(() => {
+    const saved = localStorage.getItem("notifications");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Salvar no localStorage sempre que mudar
+  useEffect(() => {
+    localStorage.setItem("votings", JSON.stringify(votings));
+  }, [votings]);
+
+  useEffect(() => {
+    localStorage.setItem("votedVotings", JSON.stringify(votedVotings));
+  }, [votedVotings]);
+
+  useEffect(() => {
+    localStorage.setItem("notifications", JSON.stringify(notifications));
+  }, [notifications]);
+
+  useEffect(() => {
+    localStorage.setItem("votingComments", JSON.stringify(votingComments));
+  }, [votingComments]);
 
   const handleLogout = () => {
     localStorage.removeItem("auth_token");
@@ -204,9 +265,9 @@ export default function Dashboard() {
 
     // Atualizar a votação no array de votings em tempo real
     setVotings(
-      votings.map((voting) => {
+      votings.map((voting: Voting) => {
         if (voting.id === selectedVoting.id) {
-          const updatedOptions = voting.options.map((opt) => {
+          const updatedOptions = voting.options.map((opt: VotingOption) => {
             if (opt.label === selectedOption) {
               const newVotes = opt.votes + 1;
               const newTotal = voting.totalVotes + 1;
@@ -232,7 +293,7 @@ export default function Dashboard() {
           };
         }
         return voting;
-      }),
+      })
     );
 
     // Criar notificação sobre o voto
@@ -254,9 +315,35 @@ export default function Dashboard() {
   const handleMarkNotificationAsRead = (notificationId: number) => {
     setNotifications(
       notifications.map((n) =>
-        n.id === notificationId ? { ...n, read: true } : n,
-      ),
+        n.id === notificationId ? { ...n, read: true } : n
+      )
     );
+  };
+
+  const handleAddComment = () => {
+    if (!newComment.trim() || !selectedVotingForComments) {
+      toast.error("Por favor, escreva um comentário");
+      return;
+    }
+
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const comment = {
+      id: Date.now(),
+      author: user.name || "Usuário",
+      text: newComment,
+      time: "Agora",
+    };
+
+    setVotingComments({
+      ...votingComments,
+      [selectedVotingForComments.id]: [
+        ...(votingComments[selectedVotingForComments.id] || []),
+        comment,
+      ],
+    });
+
+    toast.success("Comentário adicionado!");
+    setNewComment("");
   };
 
   const handleClearAllNotifications = () => {
@@ -269,11 +356,10 @@ export default function Dashboard() {
     toast.success("Todas as notificações foram marcadas como lidas");
   };
 
-  // Dados mockados - substituir por dados reais da API
   const stats = [
     {
       title: "Votações Abertas",
-      value: "3",
+      value: votings.length.toString(),
       icon: Vote,
       color: "bg-emerald-500",
       change: "+1 esta semana",
@@ -286,15 +372,15 @@ export default function Dashboard() {
       change: "+8 este mês",
     },
     {
-      title: "Propostas Enviadas",
-      value: "5",
+      title: "Votações Criadas",
+      value: votings.length.toString(),
       icon: TrendingUp,
       color: "bg-orange-500",
       change: "+2 esta semana",
     },
     {
-      title: "Minhas Propostas",
-      value: "2",
+      title: "Minhas Votações",
+      value: votedVotings.length.toString(),
       icon: FileText,
       color: "bg-blue-500",
       change: "1 em análise",
@@ -445,12 +531,6 @@ export default function Dashboard() {
                 </PopoverContent>
               </Popover>
               <button
-                onClick={() => toast("Configurações em desenvolvimento")}
-                className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hidden sm:block cursor-pointer"
-              >
-                <Settings className="h-6 w-6" />
-              </button>
-              <button
                 onClick={handleLogout}
                 className="p-2 rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 hidden sm:block cursor-pointer"
               >
@@ -499,27 +579,6 @@ export default function Dashboard() {
               />
               Votações
             </button>
-            <a
-              href="#"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg cursor-pointer"
-            >
-              <Megaphone className="h-5 w-5" />
-              Notícias
-            </a>
-            <a
-              href="#"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg cursor-pointer"
-            >
-              <Calendar className="h-5 w-5" />
-              Eventos
-            </a>
-            <a
-              href="#"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg cursor-pointer"
-            >
-              <ShieldCheck className="h-5 w-5" />
-              Transparência
-            </a>
           </nav>
         </aside>
 
@@ -580,7 +639,7 @@ export default function Dashboard() {
                     </Button>
                   </div>
                   <div className="space-y-4">
-                    {votings.slice(0, 3).map((voting) => (
+                    {votings.slice(0, 3).map((voting: Voting) => (
                       <div
                         key={voting.id}
                         className="border border-gray-200 rounded-lg p-4 hover:border-emerald-300 hover:bg-emerald-50/30 transition-all"
@@ -613,23 +672,25 @@ export default function Dashboard() {
 
                             {/* Compact Progress Bars */}
                             <div className="space-y-2">
-                              {voting.options.map((option, idx) => (
-                                <div
-                                  key={idx}
-                                  className="flex items-center gap-2"
-                                >
-                                  <span className="text-xs font-medium text-gray-700 w-20">
-                                    {option.label}
-                                  </span>
-                                  <Progress
-                                    value={option.percentage}
-                                    className="h-1.5 flex-1"
-                                  />
-                                  <span className="text-xs text-gray-500 w-12 text-right">
-                                    {option.percentage.toFixed(0)}%
-                                  </span>
-                                </div>
-                              ))}
+                              {voting.options.map(
+                                (option: VotingOption, idx: number) => (
+                                  <div
+                                    key={idx}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <span className="text-xs font-medium text-gray-700 w-20">
+                                      {option.label}
+                                    </span>
+                                    <Progress
+                                      value={option.percentage}
+                                      className="h-1.5 flex-1"
+                                    />
+                                    <span className="text-xs text-gray-500 w-12 text-right">
+                                      {option.percentage.toFixed(0)}%
+                                    </span>
+                                  </div>
+                                )
+                              )}
                             </div>
                           </div>
                         </div>
@@ -641,10 +702,20 @@ export default function Dashboard() {
                               {voting.totalVotes} votos
                             </span>
                             <span className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
+                              <Clock className="h-4 w-4" />
                               {new Date(voting.endDate).toLocaleDateString(
-                                "pt-BR",
+                                "pt-BR"
                               )}
+                            </span>
+                            <span
+                              className="flex items-center gap-1 cursor-pointer hover:text-emerald-600"
+                              onClick={() => {
+                                setSelectedVotingForComments(voting);
+                                setCommentsDialogOpen(true);
+                              }}
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                              {votingComments[voting.id]?.length || 0}
                             </span>
                           </div>
                           {voting.hasVoted ? (
@@ -814,8 +885,10 @@ export default function Dashboard() {
                         <p className="text-sm text-gray-600">Total de Votos</p>
                         <p className="text-2xl font-bold">
                           {(
-                            votings.reduce((acc, v) => acc + v.totalVotes, 0) +
-                            votedVotings.length
+                            votings.reduce(
+                              (acc: number, v: Voting) => acc + v.totalVotes,
+                              0
+                            ) + votedVotings.length
                           ).toLocaleString()}
                         </p>
                       </div>
@@ -870,7 +943,7 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {votings
                   .filter(
-                    (voting) =>
+                    (voting: Voting) =>
                       (voting.title
                         .toLowerCase()
                         .includes(searchQuery.toLowerCase()) ||
@@ -878,37 +951,41 @@ export default function Dashboard() {
                           .toLowerCase()
                           .includes(searchQuery.toLowerCase())) &&
                       (votingFilter === "todas" ||
-                        voting.category === votingFilter),
+                        voting.category === votingFilter)
                   )
-                  .map((voting) => {
+                  .map((voting: Voting) => {
                     const daysRemaining = Math.ceil(
                       (new Date(voting.endDate).getTime() -
                         new Date().getTime()) /
-                        (1000 * 60 * 60 * 24),
+                        (1000 * 60 * 60 * 24)
                     );
 
                     const hasVoted = votedVotings.includes(voting.id);
                     const voteData = voteIncrements[voting.id];
 
                     // Atualiza os votos com o incremento do usuário
-                    const updatedOptions = voting.options.map((opt) => ({
-                      ...opt,
-                      votes:
-                        opt.label === voteData?.option
-                          ? opt.votes + voteData.increment
-                          : opt.votes,
-                    }));
+                    const updatedOptions = voting.options.map(
+                      (opt: VotingOption) => ({
+                        ...opt,
+                        votes:
+                          opt.label === voteData?.option
+                            ? opt.votes + voteData.increment
+                            : opt.votes,
+                      })
+                    );
 
                     // Recalcula as porcentagens
                     const totalVotes = updatedOptions.reduce(
-                      (sum, opt) => sum + opt.votes,
-                      0,
+                      (sum: number, opt: VotingOption) => sum + opt.votes,
+                      0
                     );
-                    const optionsWithPercentage = updatedOptions.map((opt) => ({
-                      ...opt,
-                      percentage:
-                        totalVotes > 0 ? (opt.votes / totalVotes) * 100 : 0,
-                    }));
+                    const optionsWithPercentage = updatedOptions.map(
+                      (opt: VotingOption) => ({
+                        ...opt,
+                        percentage:
+                          totalVotes > 0 ? (opt.votes / totalVotes) * 100 : 0,
+                      })
+                    );
 
                     return (
                       <Card
@@ -946,23 +1023,25 @@ export default function Dashboard() {
                           </p>
 
                           <div className="space-y-3 mb-4">
-                            {optionsWithPercentage.map((option, index) => (
-                              <div key={index}>
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-sm font-medium">
-                                    {option.label}
-                                  </span>
-                                  <span className="text-sm text-gray-600">
-                                    {option.votes} votos (
-                                    {option.percentage.toFixed(1)}%)
-                                  </span>
+                            {optionsWithPercentage.map(
+                              (option: VotingOption, index: number) => (
+                                <div key={index}>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-sm font-medium">
+                                      {option.label}
+                                    </span>
+                                    <span className="text-sm text-gray-600">
+                                      {option.votes} votos (
+                                      {option.percentage.toFixed(1)}%)
+                                    </span>
+                                  </div>
+                                  <Progress
+                                    value={option.percentage}
+                                    className="h-2"
+                                  />
                                 </div>
-                                <Progress
-                                  value={option.percentage}
-                                  className="h-2"
-                                />
-                              </div>
-                            ))}
+                              )
+                            )}
                           </div>
 
                           <Separator className="my-4" />
@@ -974,12 +1053,24 @@ export default function Dashboard() {
                                 <span>{totalVotes} votos</span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <Calendar className="w-4 h-4" />
+                                <Clock className="w-4 h-4" />
                                 <span>
                                   Até{" "}
                                   {new Date(voting.endDate).toLocaleDateString(
-                                    "pt-BR",
+                                    "pt-BR"
                                   )}
+                                </span>
+                              </div>
+                              <div
+                                className="flex items-center gap-1 cursor-pointer hover:text-emerald-600"
+                                onClick={() => {
+                                  setSelectedVotingForComments(voting);
+                                  setCommentsDialogOpen(true);
+                                }}
+                              >
+                                <MessageSquare className="w-4 h-4" />
+                                <span>
+                                  {votingComments[voting.id]?.length || 0}
                                 </span>
                               </div>
                             </div>
@@ -1054,7 +1145,7 @@ export default function Dashboard() {
                       votes: number;
                       percentage: number;
                     },
-                    index: number,
+                    index: number
                   ) => (
                     <div
                       key={index}
@@ -1072,7 +1163,7 @@ export default function Dashboard() {
                         )}
                       </div>
                     </div>
-                  ),
+                  )
                 )}
               </div>
             </div>
@@ -1169,6 +1260,85 @@ export default function Dashboard() {
             <Button onClick={handleSubmitNewVoting}>
               <Vote className="w-4 h-4 mr-2" />
               Criar Votação
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Comentários */}
+      <Dialog open={commentsDialogOpen} onOpenChange={setCommentsDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Comentários</DialogTitle>
+            <DialogDescription>
+              {selectedVotingForComments?.title}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Lista de Comentários */}
+            <div className="max-h-[400px] overflow-y-auto space-y-4">
+              {selectedVotingForComments &&
+              (votingComments[selectedVotingForComments.id] || []).length ===
+                0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  Nenhum comentário ainda. Seja o primeiro!
+                </div>
+              ) : (
+                selectedVotingForComments &&
+                (votingComments[selectedVotingForComments.id] || []).map(
+                  (comment) => (
+                    <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
+                          <Users className="w-5 h-5 text-emerald-600" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="font-medium text-gray-900">
+                              {comment.author}
+                            </p>
+                            <span className="text-xs text-gray-500">
+                              {comment.time}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-700">
+                            {comment.text}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                )
+              )}
+            </div>
+
+            {/* Campo para novo comentário */}
+            <div className="space-y-2 border-t pt-4">
+              <Label htmlFor="new-comment">Adicionar comentário</Label>
+              <div className="flex gap-2">
+                <Textarea
+                  id="new-comment"
+                  placeholder="Escreva seu comentário..."
+                  rows={3}
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  className="flex-1"
+                />
+              </div>
+              <Button onClick={handleAddComment} className="w-full">
+                <Send className="w-4 h-4 mr-2" />
+                Enviar Comentário
+              </Button>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCommentsDialogOpen(false)}
+            >
+              Fechar
             </Button>
           </DialogFooter>
         </DialogContent>
