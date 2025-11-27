@@ -49,13 +49,17 @@ export default function Login() {
       // Simula login com qualquer credencial
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
+      // Extrai o nome do email (parte antes do @)
+      const emailName = formData.email.split("@")[0];
+      const userName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+
       // Salva token mock no localStorage
       localStorage.setItem("auth_token", "mock_token_" + Date.now());
       localStorage.setItem(
         "user",
         JSON.stringify({
           id: "1",
-          name: "Usuário",
+          name: userName,
           email: formData.email,
         }),
       );

@@ -19,6 +19,7 @@ import {
   Plus,
   MessageSquare,
   Send,
+  Trash2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,8 @@ export default function Dashboard() {
   const [votingCategory, setVotingCategory] = useState("");
   const [votingDialogOpen, setVotingDialogOpen] = useState(false);
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [votingToDelete, setVotingToDelete] = useState<number | null>(null);
   const [selectedVotingForComments, setSelectedVotingForComments] =
     useState<Voting | null>(null);
   const [newComment, setNewComment] = useState("");
@@ -349,6 +352,29 @@ export default function Dashboard() {
   const handleClearAllNotifications = () => {
     setNotifications([]);
     toast.success("Todas as notificações foram limpas");
+  };
+
+  const handleDeleteVoting = (votingId: number) => {
+    setVotingToDelete(votingId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteVoting = () => {
+    if (votingToDelete !== null) {
+      setVotings(votings.filter((v: Voting) => v.id !== votingToDelete));
+      
+      // Remover comentários da votação
+      const updatedComments = { ...votingComments };
+      delete updatedComments[votingToDelete];
+      setVotingComments(updatedComments);
+      
+      // Remover do array de votados
+      setVotedVotings(votedVotings.filter(id => id !== votingToDelete));
+      
+      toast.success("Votação excluída com sucesso!");
+      setDeleteDialogOpen(false);
+      setVotingToDelete(null);
+    }
   };
 
   const handleMarkAllAsRead = () => {
@@ -1015,6 +1041,14 @@ export default function Dashboard() {
                                 {voting.title}
                               </CardTitle>
                             </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteVoting(voting.id)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
                         </CardHeader>
                         <CardContent>
@@ -1086,24 +1120,37 @@ export default function Dashboard() {
                             )}
                           </div>
 
-                          {!hasVoted ? (
-                            <Button
-                              onClick={() => handleVote(voting)}
-                              className="w-full"
-                            >
-                              <Vote className="w-4 h-4 mr-2" />
-                              Votar Agora
-                            </Button>
-                          ) : (
+                          <div className="space-y-2">
+                            {!hasVoted ? (
+                              <Button
+                                onClick={() => handleVote(voting)}
+                                className="w-full"
+                              >
+                                <Vote className="w-4 h-4 mr-2" />
+                                Votar Agora
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                disabled
+                                className="w-full"
+                              >
+                                <CheckCircle2 className="w-4 h-4 mr-2" />
+                                Você já votou nesta proposta
+                              </Button>
+                            )}
                             <Button
                               variant="outline"
-                              disabled
+                              onClick={() => {
+                                setSelectedVotingForComments(voting);
+                                setCommentsDialogOpen(true);
+                              }}
                               className="w-full"
                             >
-                              <CheckCircle2 className="w-4 h-4 mr-2" />
-                              Você já votou nesta proposta
+                              <MessageSquare className="w-4 h-4 mr-2" />
+                              Fazer Comentário
                             </Button>
-                          )}
+                          </div>
                         </CardContent>
                       </Card>
                     );
@@ -1339,6 +1386,39 @@ export default function Dashboard() {
               onClick={() => setCommentsDialogOpen(false)}
             >
               Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Confirmação de Exclusão */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-gray-900">
+              Confirmar Exclusão
+            </DialogTitle>
+            <DialogDescription className="text-gray-600">
+              Tem certeza que deseja excluir esta votação? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setVotingToDelete(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={confirmDeleteVoting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Excluir Votação
             </Button>
           </DialogFooter>
         </DialogContent>
