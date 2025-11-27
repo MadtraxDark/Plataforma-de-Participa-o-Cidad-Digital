@@ -296,7 +296,7 @@ export default function Dashboard() {
           };
         }
         return voting;
-      }),
+      })
     );
 
     // Criar notificação sobre o voto
@@ -318,8 +318,8 @@ export default function Dashboard() {
   const handleMarkNotificationAsRead = (notificationId: number) => {
     setNotifications(
       notifications.map((n) =>
-        n.id === notificationId ? { ...n, read: true } : n,
-      ),
+        n.id === notificationId ? { ...n, read: true } : n
+      )
     );
   };
 
@@ -392,10 +392,10 @@ export default function Dashboard() {
     },
     {
       title: "Cidadãos Ativos",
-      value: "52",
+      value: "1",
       icon: Users,
       color: "bg-purple-500",
-      change: "+8 este mês",
+      change: "+1 este mês",
     },
     {
       title: "Votações Criadas",
@@ -438,20 +438,6 @@ export default function Dashboard() {
                 <span className="text-xl font-bold text-gray-900 hidden sm:block">
                   Participa Terê
                 </span>
-              </div>
-            </div>
-
-            {/* Search Bar */}
-            <div className="hidden md:flex flex-1 max-w-2xl mx-8">
-              <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="Buscar consultas, votações, propostas..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 w-full"
-                />
               </div>
             </div>
 
@@ -715,7 +701,7 @@ export default function Dashboard() {
                                       {option.percentage.toFixed(0)}%
                                     </span>
                                   </div>
-                                ),
+                                )
                               )}
                             </div>
                           </div>
@@ -730,7 +716,7 @@ export default function Dashboard() {
                             <span className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
                               {new Date(voting.endDate).toLocaleDateString(
-                                "pt-BR",
+                                "pt-BR"
                               )}
                             </span>
                             <span
@@ -913,7 +899,7 @@ export default function Dashboard() {
                           {(
                             votings.reduce(
                               (acc: number, v: Voting) => acc + v.totalVotes,
-                              0,
+                              0
                             ) + votedVotings.length
                           ).toLocaleString()}
                         </p>
@@ -977,13 +963,13 @@ export default function Dashboard() {
                           .toLowerCase()
                           .includes(searchQuery.toLowerCase())) &&
                       (votingFilter === "todas" ||
-                        voting.category === votingFilter),
+                        voting.category === votingFilter)
                   )
                   .map((voting: Voting) => {
                     const daysRemaining = Math.ceil(
                       (new Date(voting.endDate).getTime() -
                         new Date().getTime()) /
-                        (1000 * 60 * 60 * 24),
+                        (1000 * 60 * 60 * 24)
                     );
 
                     const hasVoted = votedVotings.includes(voting.id);
@@ -997,20 +983,20 @@ export default function Dashboard() {
                           opt.label === voteData?.option
                             ? opt.votes + voteData.increment
                             : opt.votes,
-                      }),
+                      })
                     );
 
                     // Recalcula as porcentagens
                     const totalVotes = updatedOptions.reduce(
                       (sum: number, opt: VotingOption) => sum + opt.votes,
-                      0,
+                      0
                     );
                     const optionsWithPercentage = updatedOptions.map(
                       (opt: VotingOption) => ({
                         ...opt,
                         percentage:
                           totalVotes > 0 ? (opt.votes / totalVotes) * 100 : 0,
-                      }),
+                      })
                     );
 
                     return (
@@ -1074,7 +1060,7 @@ export default function Dashboard() {
                                     className="h-2"
                                   />
                                 </div>
-                              ),
+                              )
                             )}
                           </div>
 
@@ -1091,7 +1077,7 @@ export default function Dashboard() {
                                 <span>
                                   Até{" "}
                                   {new Date(voting.endDate).toLocaleDateString(
-                                    "pt-BR",
+                                    "pt-BR"
                                   )}
                                 </span>
                               </div>
@@ -1192,7 +1178,7 @@ export default function Dashboard() {
                       votes: number;
                       percentage: number;
                     },
-                    index: number,
+                    index: number
                   ) => (
                     <div
                       key={index}
@@ -1210,7 +1196,7 @@ export default function Dashboard() {
                         )}
                       </div>
                     </div>
-                  ),
+                  )
                 )}
               </div>
             </div>
@@ -1265,7 +1251,7 @@ export default function Dashboard() {
             <div className="space-y-2">
               <Label htmlFor="voting-category">Categoria</Label>
               <Select value={votingCategory} onValueChange={setVotingCategory}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Selecione uma categoria" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1366,7 +1352,7 @@ export default function Dashboard() {
                         </div>
                       </div>
                     </div>
-                  ),
+                  )
                 )
               )}
             </div>
